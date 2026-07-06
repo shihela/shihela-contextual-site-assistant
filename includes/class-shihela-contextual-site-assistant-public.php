@@ -110,8 +110,25 @@ class Shihela_Contextual_Site_Assistant_Public {
 		register_rest_route( 'shihela-contextual-site-assistant/v1', '/chat', array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => array( $this, 'handle_chat_request' ),
-			'permission_callback' => '__return_true',
+			'permission_callback' => array( $this, 'check_chat_permissions' ),
 		) );
+	}
+
+	/**
+	 * Permissions callback for the public REST route.
+	 *
+	 * @since    1.0.0
+	 */
+	public function check_chat_permissions( $request ) {
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Security verification failed.', 'shihela-contextual-site-assistant' ),
+				array( 'status' => 403 )
+			);
+		}
+		return true;
 	}
 
 	/**
@@ -120,15 +137,6 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function handle_chat_request( $request ) {
-		// Verify Nonce headers to prevent CSRF / Bot abuse
-		$nonce = $request->get_header( 'X-WP-Nonce' );
-		if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-			return new WP_REST_Response( array(
-				'success' => false,
-				'message' => __( 'Security verification failed.', 'shihela-contextual-site-assistant' ),
-			), 403 );
-		}
-
 		$params = $request->get_json_params();
 		$message = isset( $params['message'] ) ? sanitize_text_field( $params['message'] ) : '';
 		$post_id = isset( $params['post_id'] ) ? absint( $params['post_id'] ) : 0;

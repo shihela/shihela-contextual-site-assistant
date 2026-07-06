@@ -110,18 +110,8 @@ class Shihela_Contextual_Site_Assistant_Public {
 		register_rest_route( 'shihela-contextual-site-assistant/v1', '/chat', array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => array( $this, 'handle_chat_request' ),
-			'permission_callback' => array( $this, 'check_chat_permissions' ),
+			'permission_callback' => '__return_true',
 		) );
-	}
-
-	/**
-	 * Permissions callback for the public REST route.
-	 *
-	 * @since    1.0.0
-	 */
-	public function check_chat_permissions( $request ) {
-		// Public route, but requires standard REST validation or simple verification
-		return true;
 	}
 
 	/**

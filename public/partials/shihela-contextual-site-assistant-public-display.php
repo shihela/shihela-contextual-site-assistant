@@ -80,11 +80,6 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 					</svg>
 				</button>
 			</form>
-			<div class="shihela-contextual-site-assistant-credit">
-				<span class="shihela-contextual-site-assistant-credit-text">
-					<?php esc_html_e( 'Powered by ', 'shihela-contextual-site-assistant' ); ?><strong><?php echo esc_html( $shihela_contextual_site_assistant_bot_name ); ?></strong>
-				</span>
-			</div>
 		</footer>
 	</div>
 </div>

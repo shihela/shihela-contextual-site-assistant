@@ -17,6 +17,7 @@
  * Description:       A professional floating AI assistant that answers visitors' questions in the context of the pages they browse, powered by Gemini and OpenAI.
  * Version:           1.0.0
  * Author:            Shihela
+ * Author URI:        https://yukdigitalz.com/
  * License:           GPL-2.0+
  * Text Domain:       shihela-contextual-site-assistant
  * Domain Path:       /languages

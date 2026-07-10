@@ -469,14 +469,8 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @return   string IP address.
 	 */
 	private function get_visitor_ip() {
-		$ip = '';
-		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			// In case of proxies, get the first IP in the list
-			$forwarded_ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-			$ip            = trim( reset( $forwarded_ips ) );
-		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+		$ip = '127.0.0.1'; // Default fallback if REMOTE_ADDR is not set (e.g., CLI/Cron)
+		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 		return $ip;

@@ -243,6 +243,10 @@ class Shihela_Contextual_Site_Assistant_Public {
 		$history    = isset( $params['history'] ) ? $this->sanitize_chat_history( $params['history'] ) : array();
 		$session_id = isset( $params['session_id'] ) ? sanitize_text_field( $params['session_id'] ) : '';
 
+		// Allow PRO version to override incoming query or context
+		$message    = apply_filters( 'shihela_chat_message', $message, $post_id );
+		$history    = apply_filters( 'shihela_chat_history', $history, $post_id );
+
 		// Restrict History Size (sends only last X messages to save tokens)
 		$max_history = (int) get_option( 'shihela_contextual_site_assistant_max_history', 10 );
 		if ( $max_history > 0 && count( $history ) > $max_history ) {
@@ -363,6 +367,9 @@ class Shihela_Contextual_Site_Assistant_Public {
 			$response = preg_replace( '/\[LEAD:\s*({.*?})\s*\]/s', '', $response );
 			$response = trim( $response );
 		}
+
+		// Trigger action for PRO extension (logging, tracking, CRM etc)
+		do_action( 'shihela_chat_response_received', $response, $message, $session_id, $post_id );
 
 		return new WP_REST_Response( array(
 			'success'  => true,

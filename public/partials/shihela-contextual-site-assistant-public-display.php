@@ -73,6 +73,9 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 		<!-- Footer Input Field -->
 		<footer class="shihela-contextual-site-assistant-panel-footer">
 			<form id="shihela-contextual-site-assistant-chat-form" class="shihela-contextual-site-assistant-chat-form">
+				<div style="position: absolute; left: -9999px; overflow: hidden; height: 1px; width: 1px;">
+					<input type="text" id="shihela-hp" name="shihela_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+				</div>
 				<input type="text" id="shihela-contextual-site-assistant-chat-input" class="shihela-contextual-site-assistant-chat-input" placeholder="<?php esc_attr_e( 'Type your question here...', 'shihela-contextual-site-assistant' ); ?>" required autocomplete="off">
 				<button type="submit" id="shihela-contextual-site-assistant-chat-submit" class="shihela-contextual-site-assistant-chat-submit" aria-label="<?php esc_attr_e( 'Send message', 'shihela-contextual-site-assistant' ); ?>">
 					<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

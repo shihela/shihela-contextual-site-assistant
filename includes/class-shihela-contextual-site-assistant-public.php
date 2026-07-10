@@ -57,8 +57,8 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		// Only enqueue if the plugin is configured
-		if ( ! $this->is_configured() ) {
+		// Only enqueue if the user is authorized to use the widget
+		if ( ! $this->is_user_authorized() ) {
 			return;
 		}
 		wp_enqueue_style( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css', array(), $this->version, 'all' );
@@ -70,21 +70,27 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-		if ( ! $this->is_configured() ) {
+		if ( ! $this->is_user_authorized() ) {
 			return;
 		}
 
+		$ip                  = $this->get_visitor_ip();
+		$daily_limit_reached = $this->is_daily_limit_reached() || $this->is_ip_daily_limit_reached( $ip );
+
 		wp_enqueue_script( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/js/shihela-contextual-site-assistant-public.js', array( 'jquery' ), $this->version, true );
 		wp_localize_script( $this->plugin_name, 'shihelaContextualSiteAssistantPublic', array(
-			'rest_url'         => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
-			'nonce'            => wp_create_nonce( 'wp_rest' ), // Standard WP REST API Nonce
-			'bot_name'         => esc_html( get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
-			'welcome_message'  => esc_html( get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant.' ) ),
-			'theme_color'      => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
-			'post_id'          => get_the_ID() ? get_the_ID() : 0,
-			'reset_confirm'    => __( 'Are you sure you want to reset this conversation?', 'shihela-contextual-site-assistant' ),
-			'error_response'   => __( 'Sorry, I encountered an issue processing that response.', 'shihela-contextual-site-assistant' ),
-			'error_connection' => __( 'Sorry, I am unable to connect to the assistant right now. Please try again later.', 'shihela-contextual-site-assistant' ),
+			'rest_url'            => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
+			'nonce'               => wp_create_nonce( 'wp_rest' ), // Standard WP REST API Nonce
+			'bot_name'            => esc_html( get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
+			'welcome_message'     => esc_html( get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant.' ) ),
+			'theme_color'         => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
+			'post_id'             => get_the_ID() ? get_the_ID() : 0,
+			'reset_confirm'       => __( 'Are you sure you want to reset this conversation?', 'shihela-contextual-site-assistant' ),
+			'error_response'      => __( 'Sorry, I encountered an issue processing that response.', 'shihela-contextual-site-assistant' ),
+			'error_connection'    => __( 'Sorry, I am unable to connect to the assistant right now. Please try again later.', 'shihela-contextual-site-assistant' ),
+			'max_length'          => (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ),
+			'daily_limit_reached' => $daily_limit_reached,
+			'error_daily_limit'   => __( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
 		) );
 	}
 
@@ -94,7 +100,7 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function render_chat_widget() {
-		if ( ! $this->is_configured() ) {
+		if ( ! $this->is_user_authorized() ) {
 			return;
 		}
 
@@ -128,6 +134,83 @@ class Shihela_Contextual_Site_Assistant_Public {
 				array( 'status' => 403 )
 			);
 		}
+
+		// 1. Role-based Access Control Check
+		if ( ! $this->is_user_authorized() ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'You are not authorized to use the assistant.', 'shihela-contextual-site-assistant' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$params   = $request->get_json_params();
+		$message  = isset( $params['message'] ) ? sanitize_text_field( $params['message'] ) : '';
+		$hp_value = isset( $params['hp_value'] ) ? sanitize_text_field( $params['hp_value'] ) : '';
+
+		// 2. Spam Honeypot Check
+		if ( ! empty( $hp_value ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Spam detected.', 'shihela-contextual-site-assistant' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		if ( empty( $message ) ) {
+			return new WP_Error(
+				'rest_invalid_param',
+				__( 'Message cannot be empty.', 'shihela-contextual-site-assistant' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// 3. Character Length Validation
+		$max_length = (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 );
+		if ( $max_length > 0 && mb_strlen( $message ) > $max_length ) {
+			return new WP_Error(
+				'rest_invalid_param',
+				/* translators: %d: Maximum allowed message character length */
+				sprintf( __( 'Message exceeds maximum length of %d characters.', 'shihela-contextual-site-assistant' ), $max_length ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$ip = $this->get_visitor_ip();
+
+		// 4. Global Daily Limit validation
+		if ( $this->is_daily_limit_reached() ) {
+			return new WP_Error(
+				'rest_too_many_requests',
+				__( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		// 5. Per-IP Daily Limit validation
+		if ( $this->is_ip_daily_limit_reached( $ip ) ) {
+			return new WP_Error(
+				'rest_too_many_requests',
+				__( 'Daily query limit reached for your session. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		// 6. Minute Rate Limiting (bypassed for administrators)
+		$limit_per_minute = (int) get_option( 'shihela_contextual_site_assistant_rate_limit', 5 );
+		if ( ! current_user_can( 'manage_options' ) && $limit_per_minute > 0 ) {
+			$rate_limit_key = 'shihela_contextual_site_assistant_rate_' . md5( $ip );
+			$requests_count = get_transient( $rate_limit_key );
+
+			if ( false !== $requests_count && $requests_count >= $limit_per_minute ) {
+				return new WP_Error(
+					'rest_too_many_requests',
+					__( 'Too many requests. Please slow down and try again later.', 'shihela-contextual-site-assistant' ),
+					array( 'status' => 429 )
+				);
+			}
+		}
+
 		return true;
 	}
 
@@ -137,46 +220,37 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function handle_chat_request( $request ) {
-		$params = $request->get_json_params();
-		$message = isset( $params['message'] ) ? sanitize_text_field( $params['message'] ) : '';
-		$post_id = isset( $params['post_id'] ) ? absint( $params['post_id'] ) : 0;
-		$history = isset( $params['history'] ) ? $this->sanitize_chat_history( $params['history'] ) : array();
+		// Increment limit counters and rate limit keys (safe side-effects inside controller)
+		$ip = $this->get_visitor_ip();
+		$this->increment_daily_count();
+		$this->increment_ip_daily_count( $ip );
+
+		$limit_per_minute = (int) get_option( 'shihela_contextual_site_assistant_rate_limit', 5 );
+		if ( ! current_user_can( 'manage_options' ) && $limit_per_minute > 0 ) {
+			$rate_limit_key = 'shihela_contextual_site_assistant_rate_' . md5( $ip );
+			$requests_count = get_transient( $rate_limit_key );
+
+			if ( false === $requests_count ) {
+				set_transient( $rate_limit_key, 1, 60 ); // 60 seconds expiration
+			} else {
+				set_transient( $rate_limit_key, (int) $requests_count + 1, 60 );
+			}
+		}
+
+		$params     = $request->get_json_params();
+		$message    = isset( $params['message'] ) ? sanitize_text_field( $params['message'] ) : '';
+		$post_id    = isset( $params['post_id'] ) ? absint( $params['post_id'] ) : 0;
+		$history    = isset( $params['history'] ) ? $this->sanitize_chat_history( $params['history'] ) : array();
 		$session_id = isset( $params['session_id'] ) ? sanitize_text_field( $params['session_id'] ) : '';
 
-		if ( empty( $message ) ) {
-			return new WP_REST_Response( array(
-				'success' => false,
-				'message' => __( 'Message cannot be empty.', 'shihela-contextual-site-assistant' ),
-			), 400 );
-		}
-
-		// Server-side IP rate limiting to prevent bot spamming and API key abuse
-		$ip = '';
-		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-		}
-
-		$rate_limit_key = 'shihela_contextual_site_assistant_rate_' . md5( $ip );
-		$requests_count = get_transient( $rate_limit_key );
-
-		if ( false === $requests_count ) {
-			set_transient( $rate_limit_key, 1, 60 ); // 60 seconds expiration
-		} else {
-			if ( $requests_count >= 8 ) { // Allow max 8 messages per minute per IP
-				return new WP_REST_Response( array(
-					'success' => false,
-					'message' => __( 'Too many requests. Please slow down and try again later.', 'shihela-contextual-site-assistant' ),
-				), 429 );
-			}
-			set_transient( $rate_limit_key, $requests_count + 1, 60 );
+		// Restrict History Size (sends only last X messages to save tokens)
+		$max_history = (int) get_option( 'shihela_contextual_site_assistant_max_history', 10 );
+		if ( $max_history > 0 && count( $history ) > $max_history ) {
+			$history = array_slice( $history, -$max_history );
 		}
 
 		require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-api.php';
-		$api = new Shihela_Contextual_Site_Assistant_API();
+		$api      = new Shihela_Contextual_Site_Assistant_API();
 		$response = $api->get_response( $message, $post_id, $history );
 
 		if ( is_wp_error( $response ) ) {
@@ -192,14 +266,15 @@ class Shihela_Contextual_Site_Assistant_Public {
 			$lead_data = json_decode( $lead_json, true );
 			if ( $lead_data ) {
 				global $wpdb;
-				$table_name = esc_sql( $wpdb->prefix . 'shihela_contextual_site_assistant_leads' );
+				$table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
 
 				// Check if a lead has already been captured for this session
 				$lead_exists = 0;
 				if ( ! empty( $session_id ) ) {
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 					$lead_exists = $wpdb->get_var( $wpdb->prepare(
-						"SELECT COUNT(*) FROM " . esc_sql( $table_name ) . " WHERE session_id = %s",
+						"SELECT COUNT(*) FROM %i WHERE session_id = %s",
+						$table_name,
 						$session_id
 					) );
 				}
@@ -297,6 +372,160 @@ class Shihela_Contextual_Site_Assistant_Public {
 
 	private function is_configured() {
 		return function_exists( 'wp_ai_client_prompt' );
+	}
+
+	/**
+	 * Check if current user is authorized to use the chat assistant based on Access Control settings.
+	 *
+	 * @since    1.1.0
+	 * @return   bool True if authorized, false otherwise.
+	 */
+	private function is_user_authorized() {
+		if ( ! $this->is_configured() ) {
+			return false;
+		}
+
+		$access_control = get_option( 'shihela_contextual_site_assistant_access_control', 'public' );
+
+		if ( 'admin' === $access_control ) {
+			return current_user_can( 'manage_options' );
+		}
+
+		if ( 'logged_in' === $access_control ) {
+			return is_user_logged_in();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks if the daily global API limit has been reached.
+	 *
+	 * @since    1.1.0
+	 * @return   bool True if limit reached, false otherwise.
+	 */
+	private function is_daily_limit_reached() {
+		if ( current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+
+		$daily_limit = (int) get_option( 'shihela_contextual_site_assistant_daily_limit', 100 );
+		if ( $daily_limit <= 0 ) {
+			return false;
+		}
+
+		return $this->get_daily_count() >= $daily_limit;
+	}
+
+	/**
+	 * Get current daily count. Resets automatically at midnight local WP time.
+	 *
+	 * @since    1.1.0
+	 * @return   int Daily requests count.
+	 */
+	private function get_daily_count() {
+		$data  = get_option( 'shihela_contextual_site_assistant_daily_data', array() );
+		$today = current_time( 'Y-m-d' );
+
+		if ( ! is_array( $data ) || empty( $data['date'] ) || $data['date'] !== $today ) {
+			return 0;
+		}
+
+		return isset( $data['count'] ) ? (int) $data['count'] : 0;
+	}
+
+	/**
+	 * Increment the daily count.
+	 *
+	 * @since    1.1.0
+	 */
+	private function increment_daily_count() {
+		$today = current_time( 'Y-m-d' );
+		$data  = get_option( 'shihela_contextual_site_assistant_daily_data', array() );
+
+		if ( ! is_array( $data ) || empty( $data['date'] ) || $data['date'] !== $today ) {
+			$data = array(
+				'date'  => $today,
+				'count' => 1,
+			);
+		} else {
+			$data['count'] = ( isset( $data['count'] ) ? (int) $data['count'] : 0 ) + 1;
+		}
+
+		update_option( 'shihela_contextual_site_assistant_daily_data', $data );
+	}
+
+	/**
+	 * Get visitor IP address safely.
+	 *
+	 * @since    1.2.0
+	 * @return   string IP address.
+	 */
+	private function get_visitor_ip() {
+		$ip = '';
+		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
+		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			// In case of proxies, get the first IP in the list
+			$forwarded_ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+			$ip            = trim( reset( $forwarded_ips ) );
+		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+		}
+		return $ip;
+	}
+
+	/**
+	 * Checks if the daily limit per IP has been reached.
+	 *
+	 * @since    1.2.0
+	 * @param    string $ip Visitor IP address.
+	 * @return   bool True if limit reached, false otherwise.
+	 */
+	private function is_ip_daily_limit_reached( $ip ) {
+		if ( current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+
+		$ip_limit = (int) get_option( 'shihela_contextual_site_assistant_ip_daily_limit', 20 );
+		if ( $ip_limit <= 0 ) {
+			return false;
+		}
+
+		$ip_limit_key = 'shihela_daily_ip_' . md5( $ip );
+		$count        = (int) get_transient( $ip_limit_key );
+		return $count >= $ip_limit;
+	}
+
+	/**
+	 * Increment the daily request counter for a specific IP.
+	 *
+	 * @since    1.2.0
+	 * @param    string $ip Visitor IP address.
+	 */
+	private function increment_ip_daily_count( $ip ) {
+		$ip_limit = (int) get_option( 'shihela_contextual_site_assistant_ip_daily_limit', 20 );
+		if ( $ip_limit <= 0 ) {
+			return;
+		}
+
+		$ip_limit_key = 'shihela_daily_ip_' . md5( $ip );
+		$count        = get_transient( $ip_limit_key );
+
+		if ( false === $count ) {
+			$timezone = wp_timezone();
+			$now      = new DateTime( 'now', $timezone );
+			$tomorrow = new DateTime( 'tomorrow', $timezone );
+			$seconds  = $tomorrow->getTimestamp() - $now->getTimestamp();
+			$seconds  = max( 3600, min( 86400, $seconds ) );
+
+			set_transient( $ip_limit_key, 1, $seconds );
+		} else {
+			$timeout   = get_option( '_transient_timeout_' . $ip_limit_key );
+			$remaining = $timeout ? $timeout - time() : 86400;
+			$remaining = max( 60, $remaining );
+			set_transient( $ip_limit_key, (int) $count + 1, $remaining );
+		}
 	}
 
 	/**

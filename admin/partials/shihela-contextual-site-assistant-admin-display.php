@@ -23,6 +23,13 @@ $shihela_contextual_site_assistant_system_instructions = get_option( 'shihela_co
 $shihela_contextual_site_assistant_theme_color         = get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' );
 $shihela_contextual_site_assistant_widget_position     = get_option( 'shihela_contextual_site_assistant_widget_position', 'bottom-right' );
 $shihela_contextual_site_assistant_webhook_url         = get_option( 'shihela_contextual_site_assistant_webhook_url', '' );
+
+$shihela_contextual_site_assistant_access_control      = get_option( 'shihela_contextual_site_assistant_access_control', 'public' );
+$shihela_contextual_site_assistant_daily_limit          = get_option( 'shihela_contextual_site_assistant_daily_limit', 100 );
+$shihela_contextual_site_assistant_rate_limit           = get_option( 'shihela_contextual_site_assistant_rate_limit', 5 );
+$shihela_contextual_site_assistant_max_length           = get_option( 'shihela_contextual_site_assistant_max_length', 300 );
+$shihela_contextual_site_assistant_max_history          = get_option( 'shihela_contextual_site_assistant_max_history', 10 );
+$shihela_contextual_site_assistant_ip_daily_limit      = get_option( 'shihela_contextual_site_assistant_ip_daily_limit', 20 );
 ?>
 
 <div class="wrap shihela-contextual-site-assistant-admin-wrap">
@@ -95,6 +102,55 @@ $shihela_contextual_site_assistant_webhook_url         = get_option( 'shihela_co
 							<label for="shihela_contextual_site_assistant_webhook_url"><?php esc_html_e( 'Webhook Endpoint URL', 'shihela-contextual-site-assistant' ); ?></label>
 							<input type="url" name="shihela_contextual_site_assistant_webhook_url" id="shihela_contextual_site_assistant_webhook_url" value="<?php echo esc_url( $shihela_contextual_site_assistant_webhook_url ); ?>" class="large-text shihela-contextual-site-assistant-input" placeholder="https://hooks.zapier.com/... or https://hook.make.com/...">
 							<p class="description"><?php esc_html_e( 'Whenever a new lead is captured by the chatbot, a non-blocking POST request with lead details (JSON) is sent to this URL to trigger automated workflows on Zapier, Make, etc.', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Card: Security & API Budget -->
+				<div class="shihela-contextual-site-assistant-card">
+					<h2 class="shihela-contextual-site-assistant-card-title">
+						<span class="dashicons dashicons-shield"></span>
+						<?php esc_html_e( 'Security & API Budget (Token & Spam Prevention)', 'shihela-contextual-site-assistant' ); ?>
+					</h2>
+					<div class="shihela-contextual-site-assistant-card-body">
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_access_control"><?php esc_html_e( 'Access Control', 'shihela-contextual-site-assistant' ); ?></label>
+							<select name="shihela_contextual_site_assistant_access_control" id="shihela_contextual_site_assistant_access_control" class="shihela-contextual-site-assistant-select">
+								<option value="public" <?php selected( $shihela_contextual_site_assistant_access_control, 'public' ); ?>><?php esc_html_e( 'Public (Everyone)', 'shihela-contextual-site-assistant' ); ?></option>
+								<option value="logged_in" <?php selected( $shihela_contextual_site_assistant_access_control, 'logged_in' ); ?>><?php esc_html_e( 'Registered Users Only (Logged-in)', 'shihela-contextual-site-assistant' ); ?></option>
+								<option value="admin" <?php selected( $shihela_contextual_site_assistant_access_control, 'admin' ); ?>><?php esc_html_e( 'Administrators Only', 'shihela-contextual-site-assistant' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Define who can view and interact with the chatbot widget on your website. If restricted, assets and markup are not loaded for unauthorized visitors.', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_daily_limit"><?php esc_html_e( 'Global Daily API Request Limit', 'shihela-contextual-site-assistant' ); ?></label>
+							<input type="number" name="shihela_contextual_site_assistant_daily_limit" id="shihela_contextual_site_assistant_daily_limit" value="<?php echo esc_attr( $shihela_contextual_site_assistant_daily_limit ); ?>" min="0" class="regular-text shihela-contextual-site-assistant-input">
+							<p class="description"><?php esc_html_e( 'Maximum cumulative requests allowed per day across the entire site. Use 0 for unlimited. Protects against massive API token drainage/bills.', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_ip_daily_limit"><?php esc_html_e( 'Visitor Daily Limit (Per IP)', 'shihela-contextual-site-assistant' ); ?></label>
+							<input type="number" name="shihela_contextual_site_assistant_ip_daily_limit" id="shihela_contextual_site_assistant_ip_daily_limit" value="<?php echo esc_attr( $shihela_contextual_site_assistant_ip_daily_limit ); ?>" min="0" class="regular-text shihela-contextual-site-assistant-input">
+							<p class="description"><?php esc_html_e( 'Maximum requests a single IP address can make per day. Use 0 for unlimited. Prevents a single visitor from exhausting the global daily quota.', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_rate_limit"><?php esc_html_e( 'Rate Limit (Requests per Minute per IP)', 'shihela-contextual-site-assistant' ); ?></label>
+							<input type="number" name="shihela_contextual_site_assistant_rate_limit" id="shihela_contextual_site_assistant_rate_limit" value="<?php echo esc_attr( $shihela_contextual_site_assistant_rate_limit ); ?>" min="1" class="regular-text shihela-contextual-site-assistant-input">
+							<p class="description"><?php esc_html_e( 'Maximum number of messages a single IP address can send per minute. Administrators are automatically exempted from this limit.', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_max_length"><?php esc_html_e( 'Max Message Character Length', 'shihela-contextual-site-assistant' ); ?></label>
+							<input type="number" name="shihela_contextual_site_assistant_max_length" id="shihela_contextual_site_assistant_max_length" value="<?php echo esc_attr( $shihela_contextual_site_assistant_max_length ); ?>" min="10" class="regular-text shihela-contextual-site-assistant-input">
+							<p class="description"><?php esc_html_e( 'Restricts the character length of visitor messages to prevent token wasting on excessively long texts.', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_max_history"><?php esc_html_e( 'Max Conversation History Depth', 'shihela-contextual-site-assistant' ); ?></label>
+							<input type="number" name="shihela_contextual_site_assistant_max_history" id="shihela_contextual_site_assistant_max_history" value="<?php echo esc_attr( $shihela_contextual_site_assistant_max_history ); ?>" min="1" class="regular-text shihela-contextual-site-assistant-input">
+							<p class="description"><?php esc_html_e( 'The maximum number of previous messages to retain and send to the AI model as context. Lower numbers save significant tokens per query.', 'shihela-contextual-site-assistant' ); ?></p>
 						</div>
 					</div>
 				</div>

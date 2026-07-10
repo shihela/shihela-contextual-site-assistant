@@ -43,10 +43,10 @@ class Shihela_Contextual_Site_Assistant_Activator {
 
 		// Create leads database table
 		global $wpdb;
-		$table_name = esc_sql( $wpdb->prefix . 'shihela_contextual_site_assistant_leads' );
+		$table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
 		$charset_collate = $wpdb->get_charset_collate();
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = "CREATE TABLE $table_name (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			lead_date datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,

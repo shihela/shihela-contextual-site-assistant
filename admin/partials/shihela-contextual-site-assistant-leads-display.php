@@ -15,7 +15,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 global $wpdb;
-$shihela_contextual_site_assistant_table_name = esc_sql( $wpdb->prefix . 'shihela_contextual_site_assistant_leads' );
+$shihela_contextual_site_assistant_table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $shihela_contextual_site_assistant_search     = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -57,22 +57,23 @@ $shihela_contextual_site_assistant_where_sql = " WHERE " . implode( " AND ", $sh
 
 // Count total matching leads for pagination
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-$shihela_contextual_site_assistant_total_sql   = "SELECT COUNT(*) FROM " . esc_sql( $shihela_contextual_site_assistant_table_name ) . $shihela_contextual_site_assistant_where_sql;
-// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-$shihela_contextual_site_assistant_total_sql   = $wpdb->prepare( $shihela_contextual_site_assistant_total_sql, $shihela_contextual_site_assistant_params );
+$shihela_contextual_site_assistant_total_sql    = "SELECT COUNT(*) FROM %i" . $shihela_contextual_site_assistant_where_sql;
+$shihela_contextual_site_assistant_total_params = array_merge( array( $shihela_contextual_site_assistant_table_name ), $shihela_contextual_site_assistant_params );
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-$shihela_contextual_site_assistant_total_leads = (int) $wpdb->get_var( $shihela_contextual_site_assistant_total_sql );
-$shihela_contextual_site_assistant_total_pages = ceil( $shihela_contextual_site_assistant_total_leads / $shihela_contextual_site_assistant_limit );
+$shihela_contextual_site_assistant_total_leads  = (int) $wpdb->get_var( $wpdb->prepare( $shihela_contextual_site_assistant_total_sql, $shihela_contextual_site_assistant_total_params ) );
+$shihela_contextual_site_assistant_total_pages  = ceil( $shihela_contextual_site_assistant_total_leads / $shihela_contextual_site_assistant_limit );
 
 // Get the paginated results
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-$shihela_contextual_site_assistant_query_sql    = "SELECT * FROM " . esc_sql( $shihela_contextual_site_assistant_table_name ) . $shihela_contextual_site_assistant_where_sql . " ORDER BY lead_date DESC LIMIT %d OFFSET %d";
-$shihela_contextual_site_assistant_query_params = array_merge( $shihela_contextual_site_assistant_params, array( $shihela_contextual_site_assistant_limit, $shihela_contextual_site_assistant_offset ) );
-// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-$shihela_contextual_site_assistant_query_sql    = $wpdb->prepare( $shihela_contextual_site_assistant_query_sql, $shihela_contextual_site_assistant_query_params );
+$shihela_contextual_site_assistant_query_sql    = "SELECT * FROM %i" . $shihela_contextual_site_assistant_where_sql . " ORDER BY lead_date DESC LIMIT %d OFFSET %d";
+$shihela_contextual_site_assistant_query_params = array_merge(
+	array( $shihela_contextual_site_assistant_table_name ),
+	$shihela_contextual_site_assistant_params,
+	array( $shihela_contextual_site_assistant_limit, $shihela_contextual_site_assistant_offset )
+);
 
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-$shihela_contextual_site_assistant_leads = $wpdb->get_results( $shihela_contextual_site_assistant_query_sql );
+$shihela_contextual_site_assistant_leads = $wpdb->get_results( $wpdb->prepare( $shihela_contextual_site_assistant_query_sql, $shihela_contextual_site_assistant_query_params ) );
 
 // Build CSV Export URL
 $shihela_contextual_site_assistant_export_url = wp_nonce_url(

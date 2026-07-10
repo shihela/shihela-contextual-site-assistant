@@ -27,6 +27,30 @@
 		// Load history from session storage if exists
 		initChatHistory();
 
+		// Enforce max character limit on input
+		if (shihelaContextualSiteAssistantPublic.max_length) {
+			$input.attr('maxlength', shihelaContextualSiteAssistantPublic.max_length);
+		}
+
+		// Handle daily limit block
+		if (shihelaContextualSiteAssistantPublic.daily_limit_reached) {
+			$input.prop('disabled', true);
+			$submitBtn.prop('disabled', true);
+			$input.attr('placeholder', shihelaContextualSiteAssistantPublic.error_daily_limit);
+
+			// Show daily limit notification in chat body if history is empty
+			if (chatHistory.length === 0) {
+				$messagesBody.html(`
+					<div class="shihela-contextual-site-assistant-message assistant">
+						<div class="shihela-contextual-site-assistant-message-bubble">
+							${shihelaContextualSiteAssistantPublic.error_daily_limit}
+						</div>
+						<span class="shihela-contextual-site-assistant-message-time">${getCurrentTime()}</span>
+					</div>
+				`);
+			}
+		}
+
 		// Launcher click toggle
 		$launcher.on('click', function() {
 			const isHidden = $panel.hasClass('hidden');
@@ -187,11 +211,14 @@
 		}
 
 		function sendMessageToAI(userMessage) {
+			const honeypotVal = $('#shihela-hp').val() || '';
+
 			const payload = {
 				message: userMessage,
 				post_id: shihelaContextualSiteAssistantPublic.post_id,
 				history: chatHistory,
-				session_id: chatSessionId
+				session_id: chatSessionId,
+				hp_value: honeypotVal
 			};
 
 			fetch(shihelaContextualSiteAssistantPublic.rest_url, {

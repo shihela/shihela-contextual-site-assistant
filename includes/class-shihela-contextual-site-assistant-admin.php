@@ -124,7 +124,7 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			if ( wp_verify_nonce( $nonce, 'delete_lead_' . $lead_id ) ) {
 				if ( current_user_can( 'manage_options' ) ) {
 					global $wpdb;
-					$table_name = esc_sql( $wpdb->prefix . 'shihela_contextual_site_assistant_leads' );
+					$table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 					$wpdb->delete( $table_name, array( 'id' => $lead_id ) );
 
@@ -156,7 +156,7 @@ class Shihela_Contextual_Site_Assistant_Admin {
 	 */
 	private function export_leads_to_csv() {
 		global $wpdb;
-		$table_name = esc_sql( $wpdb->prefix . 'shihela_contextual_site_assistant_leads' );
+		$table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$search_query = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
@@ -188,12 +188,11 @@ class Shihela_Contextual_Site_Assistant_Admin {
 		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$sql = "SELECT lead_date, lead_name, lead_email, lead_message, page_url FROM " . esc_sql( $table_name ) . " WHERE " . implode( " AND ", $where_clauses ) . " ORDER BY lead_date DESC";
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$sql = $wpdb->prepare( $sql, $params );
+		$sql = "SELECT lead_date, lead_name, lead_email, lead_message, page_url FROM %i WHERE " . implode( " AND ", $where_clauses ) . " ORDER BY lead_date DESC";
+		array_unshift( $params, $table_name );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$leads = $wpdb->get_results( $sql );
+		$leads = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
 
 		// Set headers for download
 		header( 'Content-Type: text/csv; charset=utf-8' );
@@ -285,6 +284,42 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'type'              => 'string',
 			'sanitize_callback' => 'esc_url_raw',
 			'default'           => '',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_access_control', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => 'public',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_daily_limit', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 100,
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_rate_limit', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 5,
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_max_length', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 300,
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_max_history', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 10,
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_ip_daily_limit', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 20,
 		) );
 	}
 

@@ -7,7 +7,7 @@
  * Author:            Shihela
  * Author URI:        https://yukdigitalz.com/
  * License:           GPL-2.0+
- * Text Domain:       shihela-contextual-site-assistant-pro
+ * Text Domain:       shihela-contextual-site-assistant
  * Domain Path:       /languages
  */
 
@@ -40,6 +40,7 @@ class Shihela_Contextual_Site_Assistant_Pro {
 
 			// Deactivate this PRO plugin safely
 			deactivate_plugins( plugin_basename( __FILE__ ) );
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( isset( $_GET['activate'] ) ) {
 				unset( $_GET['activate'] );
 			}
@@ -57,8 +58,8 @@ class Shihela_Contextual_Site_Assistant_Pro {
 		?>
 		<div class="error notice is-dismissible">
 			<p>
-				<strong><?php esc_html_e( 'Shihela Contextual Site Assistant PRO', 'shihela-contextual-site-assistant-pro' ); ?></strong> 
-				<?php esc_html_e( 'requires the free version (Shihela Contextual Site Assistant) to be installed and active. The PRO extension has been deactivated.', 'shihela-contextual-site-assistant-pro' ); ?>
+				<strong><?php esc_html_e( 'Shihela Contextual Site Assistant PRO', 'shihela-contextual-site-assistant' ); ?></strong> 
+				<?php esc_html_e( 'requires the free version (Shihela Contextual Site Assistant) to be installed and active. The PRO extension has been deactivated.', 'shihela-contextual-site-assistant' ); ?>
 			</p>
 		</div>
 		<?php

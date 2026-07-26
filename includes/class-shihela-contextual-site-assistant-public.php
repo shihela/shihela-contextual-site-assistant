@@ -81,6 +81,7 @@ class Shihela_Contextual_Site_Assistant_Public {
 		wp_localize_script( $this->plugin_name, 'shihelaContextualSiteAssistantPublic', array(
 			'rest_url'            => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
 			'nonce'               => wp_create_nonce( 'wp_rest' ), // Standard WP REST API Nonce
+			'css_url'             => SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css',
 			'bot_name'            => esc_html( get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
 			'welcome_message'     => esc_html( get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant.' ) ),
 			'theme_color'         => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
@@ -243,10 +244,6 @@ class Shihela_Contextual_Site_Assistant_Public {
 		$history    = isset( $params['history'] ) ? $this->sanitize_chat_history( $params['history'] ) : array();
 		$session_id = isset( $params['session_id'] ) ? sanitize_text_field( $params['session_id'] ) : '';
 
-		// Allow PRO version to override incoming query or context
-		$message    = apply_filters( 'shihela_chat_message', $message, $post_id );
-		$history    = apply_filters( 'shihela_chat_history', $history, $post_id );
-
 		// Restrict History Size (sends only last X messages to save tokens)
 		$max_history = (int) get_option( 'shihela_contextual_site_assistant_max_history', 10 );
 		if ( $max_history > 0 && count( $history ) > $max_history ) {
@@ -367,9 +364,6 @@ class Shihela_Contextual_Site_Assistant_Public {
 			$response = preg_replace( '/\[LEAD:\s*({.*?})\s*\]/s', '', $response );
 			$response = trim( $response );
 		}
-
-		// Trigger action for PRO extension (logging, tracking, CRM etc)
-		do_action( 'shihela_chat_response_received', $response, $message, $session_id, $post_id );
 
 		return new WP_REST_Response( array(
 			'success'  => true,

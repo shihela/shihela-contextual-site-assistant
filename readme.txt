@@ -25,11 +25,8 @@ The plugin also automatically captures leads when visitors leave their contact i
 * **Provider Agnostic:** Out-of-the-box support for any LLM provider configured in your WordPress dashboard (Gemini, OpenAI, Anthropic, etc.).
 * **Lead Capture & Management:** Automatically parses and saves customer inquiries in the WordPress database and notifies administrators.
 * **Custom Positioning & Styling:** Set widget position (bottom-right, bottom-left, top-right, top-left) and customize branding colors.
-* **Access Control & Permissions:** Restrict widget visibility (Public, Logged-in Users Only, or Administrators Only) to control assistant access.
-* **API Quota & Token Budgeting:** Configure global daily query limits and per-IP daily limits to prevent unexpected token consumption bills.
-* **Spam & Bot Protection:** Integrated accessible hidden honeypot fields to block script spammers from draining your API key.
-* **History Depth Slicing:** Automatically limits the size of conversation history passed to the API to save precious tokens.
-* **WordPress Reviewer Compliant REST Routing:** Security and rate checks are validated in the REST API routing layer (`permission_callback`) for maximum compliance.
+* **Premium Design:** Sleek layout featuring glassmorphic effects, responsive styles, typing animation loaders, and chat session histories.
+* **Rate Limiting:** Built-in server-side IP rate limiting protecting your server and API limits from bot abuse.
 
 == Third-Party Services & Data Privacy Notice ==
 
@@ -62,10 +59,4 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 = 1.0.0 =
 * Initial release of Shihela Contextual Site Assistant widget.
 * Integrated native WordPress 7.0+ AI Client API.
-* Added Role-based Access Control (Public, Logged-in, Admin Only).
-* Implemented Per-IP Daily Limit to prevent quota leakage by single visitors.
-* Implemented Global Daily API request budget limits.
-* Added Spam Honeypot protection.
-* Added History Depth control to optimize API token utilization.
-* Refactored REST API permissions callback for compliance with WordPress reviewer guidelines.
 * Added IP rate limiting and session-based lead capturing.

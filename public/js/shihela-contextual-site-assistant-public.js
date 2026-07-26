@@ -1,282 +1,347 @@
 /**
  * Frontend scripts for Shihela Contextual Site Assistant Widget
+ * Enterprise Edition: Shadow DOM Encapsulation, WCAG 2.1 AA Accessibility, & Performance Hardened
  */
 (function($) {
-	'use strict';
+    'use strict';
 
-	$(function() {
-		const $root = $('#shihela-contextual-site-assistant-widget-root');
-		const $launcher = $('#shihela-contextual-site-assistant-launcher');
-		const $panel = $('#shihela-contextual-site-assistant-panel');
-		const $closeBtn = $('#shihela-contextual-site-assistant-close-panel');
-		const $resetBtn = $('#shihela-contextual-site-assistant-reset-chat');
-		const $messagesBody = $('#shihela-contextual-site-assistant-messages-body');
-		const $form = $('#shihela-contextual-site-assistant-chat-form');
-		const $input = $('#shihela-contextual-site-assistant-chat-input');
-		const $submitBtn = $('#shihela-contextual-site-assistant-chat-submit');
+    $(function() {
+        // 1. CEK RENDER DARI PHP
+        // Kita mengambil elemen root yang sudah di-render oleh PHP (biasanya di wp_footer)
+        const existingRootDom = document.getElementById('shihela-contextual-site-assistant-widget-root');
+        if (!existingRootDom) return;
 
-		const chatHistoryKey = 'shihela_contextual_site_assistant_chat_history_v1';
-		const chatSessionKey = 'shihela_contextual_site_assistant_session_id_v1';
-		let chatHistory = [];
-		let chatSessionId = sessionStorage.getItem(chatSessionKey);
-		if (!chatSessionId) {
-			chatSessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-			sessionStorage.setItem(chatSessionKey, chatSessionId);
-		}
+        // 2. SETUP SHADOW DOM HOST & ENKAPSULASI
+        // Kita buat container host terisolasi di body, lalu tempelkan Shadow Root
+        let hostElement = document.getElementById('shihela-contextual-site-assistant-host');
+        if (!hostElement) {
+            hostElement = document.createElement('div');
+            hostElement.id = 'shihela-contextual-site-assistant-host';
+            document.body.appendChild(hostElement);
+        }
+        const shadowRoot = hostElement.attachShadow({ mode: 'open' });
 
-		// Load history from session storage if exists
-		initChatHistory();
+        // 3. INJECT STYLESHEET KE DALAM SHADOW DOM
+        // Karena CSS global tidak bisa masuk ke Shadow DOM, kita muat file CSS plugin langsung di sini
+        if (typeof shihelaContextualSiteAssistantPublic !== 'undefined' && shihelaContextualSiteAssistantPublic.css_url) {
+            const styleLink = document.createElement('link');
+            styleLink.rel = 'stylesheet';
+            styleLink.href = shihelaContextualSiteAssistantPublic.css_url;
+            shadowRoot.appendChild(styleLink);
+        }
 
-		// Enforce max character limit on input
-		if (shihelaContextualSiteAssistantPublic.max_length) {
-			$input.attr('maxlength', shihelaContextualSiteAssistantPublic.max_length);
-		}
+        // 4. PINDAHKAN WIDGET KE DALAM SHADOW ROOT
+        // Elemen DOM asli dipindahkan ke dalam "tembok pelindung" Shadow DOM
+        shadowRoot.appendChild(existingRootDom);
 
-		// Handle daily limit block
-		if (shihelaContextualSiteAssistantPublic.daily_limit_reached) {
-			$input.prop('disabled', true);
-			$submitBtn.prop('disabled', true);
-			$input.attr('placeholder', shihelaContextualSiteAssistantPublic.error_daily_limit);
+        // 5. HELPER JQUERY SCOPED (Kunci untuk Shadow DOM)
+        // Memastikan jQuery hanya mencari elemen di dalam batas Shadow Root kita
+        const $find = (selector) => $(shadowRoot.querySelector(selector));
 
-			// Show daily limit notification in chat body if history is empty
-			if (chatHistory.length === 0) {
-				$messagesBody.html(`
-					<div class="shihela-contextual-site-assistant-message assistant">
-						<div class="shihela-contextual-site-assistant-message-bubble">
-							${shihelaContextualSiteAssistantPublic.error_daily_limit}
-						</div>
-						<span class="shihela-contextual-site-assistant-message-time">${getCurrentTime()}</span>
-					</div>
-				`);
-			}
-		}
+        // Inisialisasi variabel DOM menggunakan Scoped Finder
+        const $root = $find('#shihela-contextual-site-assistant-widget-root');
+        const $launcher = $find('#shihela-contextual-site-assistant-launcher');
+        const $panel = $find('#shihela-contextual-site-assistant-panel');
+        const $closeBtn = $find('#shihela-contextual-site-assistant-close-panel');
+        const $resetBtn = $find('#shihela-contextual-site-assistant-reset-chat');
+        const $messagesBody = $find('#shihela-contextual-site-assistant-messages-body');
+        const $form = $find('#shihela-contextual-site-assistant-chat-form');
+        const $input = $find('#shihela-contextual-site-assistant-chat-input');
+        const $submitBtn = $find('#shihela-contextual-site-assistant-chat-submit');
 
-		// Launcher click toggle
-		$launcher.on('click', function() {
-			const isHidden = $panel.hasClass('hidden');
-			if (isHidden) {
-				openPanel();
-			} else {
-				closePanel();
-			}
-		});
+        // State Manajemen
+        const chatHistoryKey = 'shihela_contextual_site_assistant_chat_history_v1';
+        const chatSessionKey = 'shihela_contextual_site_assistant_session_id_v1';
+        let chatHistory = [];
+        let isProcessing = false; // [PERFORMA] State guard untuk mencegah Double-Submit Spam
+        
+        let chatSessionId = sessionStorage.getItem(chatSessionKey);
+        if (!chatSessionId) {
+            chatSessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            sessionStorage.setItem(chatSessionKey, chatSessionId);
+        }
 
-		// Close button click
-		$closeBtn.on('click', function() {
-			closePanel();
-		});
+        // --- ENTERPRISE ACCESSIBILITY (A11Y - WCAG 2.1 AA) SETUP ---
+        $launcher.attr({
+            'role': 'button',
+            'aria-expanded': 'false',
+            'aria-label': 'Buka asisten obrolan situs',
+            'aria-controls': 'shihela-contextual-site-assistant-panel',
+            'tabindex': '0'
+        });
 
-		// Reset chat button click
-		$resetBtn.on('click', function(e) {
-			e.preventDefault();
-			if (confirm(shihelaContextualSiteAssistantPublic.reset_confirm)) {
-				chatHistory = [];
-				sessionStorage.removeItem(chatHistoryKey);
-				sessionStorage.removeItem(chatSessionKey);
+        $panel.attr({
+            'role': 'dialog',
+            'aria-modal': 'false',
+            'aria-label': 'Shihela Contextual Site Assistant',
+            'aria-hidden': 'true'
+        });
 
-				// Generate new session ID for next conversation
-				chatSessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-				sessionStorage.setItem(chatSessionKey, chatSessionId);
+        // [A11Y] Live Region agar Screen Reader membacakan pesan baru secara otomatis
+        $messagesBody.attr({
+            'role': 'log',
+            'aria-live': 'polite',
+            'aria-relevant': 'additions',
+            'aria-atomic': 'false'
+        });
 
-				$messagesBody.html(`
-					<div class="shihela-contextual-site-assistant-message assistant">
-						<div class="shihela-contextual-site-assistant-message-bubble">
-							${shihelaContextualSiteAssistantPublic.welcome_message}
-						</div>
-						<span class="shihela-contextual-site-assistant-message-time">${getCurrentTime()}</span>
-					</div>
-				`);
-				scrollToBottom();
-			}
-		});
+        // Load history from session storage if exists
+        initChatHistory();
 
-		// Submit form handler
-		$form.on('submit', function(e) {
-			e.preventDefault();
-			const message = $input.val().trim();
-			if (!message) return;
+        // Enforce max character limit on input
+        if (shihelaContextualSiteAssistantPublic.max_length) {
+            $input.attr('maxlength', shihelaContextualSiteAssistantPublic.max_length);
+        }
 
-			// Append user message
-			appendMessage('user', message);
-			$input.val('');
+        // Handle daily limit block
+        if (shihelaContextualSiteAssistantPublic.daily_limit_reached) {
+            $input.prop('disabled', true);
+            $submitBtn.prop('disabled', true);
+            $input.attr('placeholder', shihelaContextualSiteAssistantPublic.error_daily_limit);
 
-			// Disable inputs while processing
-			toggleLoading(true);
+            if (chatHistory.length === 0) {
+                $messagesBody.html(`
+                    <div class="shihela-contextual-site-assistant-message assistant">
+                        <div class="shihela-contextual-site-assistant-message-bubble">
+                            ${shihelaContextualSiteAssistantPublic.error_daily_limit}
+                        </div>
+                        <span class="shihela-contextual-site-assistant-message-time">${getCurrentTime()}</span>
+                    </div>
+                `);
+            }
+        }
 
-			// Send to REST API
-			sendMessageToAI(message);
-		});
+        // Launcher click & keyboard (Enter/Space) toggle
+        $launcher.on('click keypress', function(e) {
+            if (e.type === 'click' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const isHidden = $panel.hasClass('hidden');
+                if (isHidden) {
+                    openPanel();
+                } else {
+                    closePanel();
+                }
+            }
+        });
 
-		function openPanel() {
-			$panel.removeClass('hidden');
-			$launcher.find('.shihela-contextual-site-assistant-icon-chat').hide();
-			$launcher.find('.shihela-contextual-site-assistant-icon-close').show();
-			scrollToBottom();
-			$input.trigger('focus');
-		}
+        // Close button click
+        $closeBtn.on('click', function() {
+            closePanel();
+        });
 
-		function closePanel() {
-			$panel.addClass('hidden');
-			$launcher.find('.shihela-contextual-site-assistant-icon-chat').show();
-			$launcher.find('.shihela-contextual-site-assistant-icon-close').hide();
-		}
+        // [A11Y] Escape key listener untuk menutup panel secara cepat (Keyboard Navigation)
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && !$panel.hasClass('hidden')) {
+                closePanel();
+            }
+        });
 
-		function toggleLoading(isLoading) {
-			if (isLoading) {
-				$input.prop('disabled', true);
-				$submitBtn.prop('disabled', true);
-				showTypingIndicator();
-			} else {
-				$input.prop('disabled', false);
-				$submitBtn.prop('disabled', false);
-				hideTypingIndicator();
-				$input.trigger('focus');
-			}
-		}
+        // Reset chat button click
+        $resetBtn.on('click', function(e) {
+            e.preventDefault();
+            if (confirm(shihelaContextualSiteAssistantPublic.reset_confirm)) {
+                chatHistory = [];
+                sessionStorage.removeItem(chatHistoryKey);
+                sessionStorage.removeItem(chatSessionKey);
 
-		function appendMessage(role, text, timestamp = '') {
-			const timeStr = timestamp || getCurrentTime();
-			const formattedText = formatMarkdown(text);
-			const alignmentClass = role === 'user' ? 'user' : 'assistant';
+                chatSessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                sessionStorage.setItem(chatSessionKey, chatSessionId);
 
-			const messageHtml = `
-				<div class="shihela-contextual-site-assistant-message ${alignmentClass}">
-					<div class="shihela-contextual-site-assistant-message-bubble">
-						${formattedText}
-					</div>
-					<span class="shihela-contextual-site-assistant-message-time">${timeStr}</span>
-				</div>
-			`;
+                $messagesBody.html(`
+                    <div class="shihela-contextual-site-assistant-message assistant">
+                        <div class="shihela-contextual-site-assistant-message-bubble">
+                            ${shihelaContextualSiteAssistantPublic.welcome_message}
+                        </div>
+                        <span class="shihela-contextual-site-assistant-message-time">${getCurrentTime()}</span>
+                    </div>
+                `);
+                scrollToBottom();
+                $input.trigger('focus');
+            }
+        });
 
-			$messagesBody.append(messageHtml);
-			scrollToBottom();
-		}
+        // Submit form handler dengan Double-Submit Protection
+        $form.on('submit', function(e) {
+            e.preventDefault();
+            
+            // [PERFORMA] Mencegah pengiriman ganda jika request sebelumnya sedang diproses
+            if (isProcessing) return;
 
-		function showTypingIndicator() {
-			const indicatorHtml = `
-				<div id="shihela-contextual-site-assistant-typing-indicator" class="shihela-contextual-site-assistant-typing-bubble">
-					<span class="shihela-contextual-site-assistant-typing-dot"></span>
-					<span class="shihela-contextual-site-assistant-typing-dot"></span>
-					<span class="shihela-contextual-site-assistant-typing-dot"></span>
-				</div>
-			`;
-			$messagesBody.append(indicatorHtml);
-			scrollToBottom();
-		}
+            const message = $input.val().trim();
+            if (!message) return;
 
-		function hideTypingIndicator() {
-			$('#shihela-contextual-site-assistant-typing-indicator').remove();
-		}
+            isProcessing = true; // Kunci eksekusi
+            appendMessage('user', message);
+            $input.val('');
 
-		function scrollToBottom() {
-			$messagesBody.scrollTop($messagesBody[0].scrollHeight);
-		}
+            toggleLoading(true);
+            sendMessageToAI(message);
+        });
 
-		function getCurrentTime() {
-			const now = new Date();
-			return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-		}
+        function openPanel() {
+            $panel.removeClass('hidden').attr('aria-hidden', 'false');
+            $launcher.attr('aria-expanded', 'true');
+            $launcher.find('.shihela-contextual-site-assistant-icon-chat').hide();
+            $launcher.find('.shihela-contextual-site-assistant-icon-close').show();
+            scrollToBottom();
+            // [A11Y] Pindahkan fokus langsung ke input chat agar siap diketik
+            setTimeout(() => $input.trigger('focus'), 100);
+        }
 
-		// Simple Markdown Formatter to keep plugin lightweight
-		// Bold: **text**
-		// Italics: *text*
-		// Bullet lists: Lines starting with "- " or "* "
-		// Paragraphs: Split double newlines
-		function formatMarkdown(text) {
-			// Escape HTML
-			let html = text
-				.replace(/&/g, '&amp;')
-				.replace(/</g, '&lt;')
-				.replace(/>/g, '&gt;')
-				.replace(/"/g, '&quot;')
-				.replace(/'/g, '&#039;');
+        function closePanel() {
+            $panel.addClass('hidden').attr('aria-hidden', 'true');
+            $launcher.attr('aria-expanded', 'false');
+            $launcher.find('.shihela-contextual-site-assistant-icon-chat').show();
+            $launcher.find('.shihela-contextual-site-assistant-icon-close').hide();
+            // [A11Y] Kembalikan fokus ke tombol launcher demi kenyamanan navigasi keyboard
+            $launcher.trigger('focus');
+        }
 
-			// Bold
-			html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        function toggleLoading(isLoading) {
+            if (isLoading) {
+                $input.prop('disabled', true);
+                $submitBtn.prop('disabled', true);
+                showTypingIndicator();
+            } else {
+                $input.prop('disabled', false);
+                $submitBtn.prop('disabled', false);
+                hideTypingIndicator();
+                $input.trigger('focus');
+            }
+        }
 
-			// Italics
-			html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        function appendMessage(role, text, timestamp = '') {
+            const timeStr = timestamp || getCurrentTime();
+            const formattedText = formatMarkdown(text);
+            const alignmentClass = role === 'user' ? 'user' : 'assistant';
 
-			// Bullet lists
-			html = html.replace(/(?:^|\n)[-*]\s+(.+)/g, function(match, p1) {
-				return '<br>• ' + p1;
-			});
+            const messageHtml = `
+                <div class="shihela-contextual-site-assistant-message ${alignmentClass}">
+                    <div class="shihela-contextual-site-assistant-message-bubble">
+                        ${formattedText}
+                    </div>
+                    <span class="shihela-contextual-site-assistant-message-time">${timeStr}</span>
+                </div>
+            `;
 
-			// Paragraphs
-			const paragraphs = html.split('\n\n');
-			return paragraphs.map(p => {
-				const inner = p.replace(/\n/g, '<br>');
-				return `<p>${inner}</p>`;
-			}).join('');
-		}
+            $messagesBody.append(messageHtml);
+            scrollToBottom();
+        }
 
-		function sendMessageToAI(userMessage) {
-			const honeypotVal = $('#shihela-hp').val() || '';
+        function showTypingIndicator() {
+            const indicatorHtml = `
+                <div id="shihela-contextual-site-assistant-typing-indicator" class="shihela-contextual-site-assistant-typing-bubble" aria-label="Asisten sedang mengetik...">
+                    <span class="shihela-contextual-site-assistant-typing-dot"></span>
+                    <span class="shihela-contextual-site-assistant-typing-dot"></span>
+                    <span class="shihela-contextual-site-assistant-typing-dot"></span>
+                </div>
+            `;
+            $messagesBody.append(indicatorHtml);
+            scrollToBottom();
+        }
 
-			const payload = {
-				message: userMessage,
-				post_id: shihelaContextualSiteAssistantPublic.post_id,
-				history: chatHistory,
-				session_id: chatSessionId,
-				hp_value: honeypotVal
-			};
+        function hideTypingIndicator() {
+            $find('#shihela-contextual-site-assistant-typing-indicator').remove();
+        }
 
-			fetch(shihelaContextualSiteAssistantPublic.rest_url, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': shihelaContextualSiteAssistantPublic.nonce
-				},
-				body: JSON.stringify(payload)
-			})
-			.then(response => {
-				if (!response.ok) {
-					return response.json().then(err => { throw err; });
-				}
-				return response.json();
-			})
-			.then(data => {
-				toggleLoading(false);
-				if (data.success && data.response) {
-					const reply = data.response;
-					appendMessage('assistant', reply);
+        function scrollToBottom() {
+            $messagesBody.scrollTop($messagesBody[0].scrollHeight);
+        }
 
-					// Save to history list
-					chatHistory.push({ role: 'user', content: userMessage });
-					chatHistory.push({ role: 'assistant', content: reply });
-					saveChatHistory();
-				} else {
-					appendMessage('assistant', shihelaContextualSiteAssistantPublic.error_response);
-				}
-			})
-			.catch(error => {
-				toggleLoading(false);
-				const errorMsg = error.message || shihelaContextualSiteAssistantPublic.error_connection;
-				appendMessage('assistant', errorMsg);
-			});
-		}
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
 
-		function saveChatHistory() {
-			try {
-				sessionStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
-			} catch (e) {
-				console.error('Failed to save chat history to sessionStorage', e);
-			}
-		}
+        function formatMarkdown(text) {
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
 
-		function initChatHistory() {
-			try {
-				const saved = sessionStorage.getItem(chatHistoryKey);
-				if (saved) {
-					chatHistory = JSON.parse(saved);
-					// Re-populate messages into body (skip welcome message since we render it statically)
-					chatHistory.forEach(msg => {
-						appendMessage(msg.role, msg.content);
-					});
-				}
-			} catch (e) {
-				console.error('Failed to initialize chat history from sessionStorage', e);
-			}
-		}
-	});
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            html = html.replace(/(?:^|\n)[-*]\s+(.+)/g, function(match, p1) {
+                return '<br>• ' + p1;
+            });
+
+            const paragraphs = html.split('\n\n');
+            return paragraphs.map(p => {
+                const inner = p.replace(/\n/g, '<br>');
+                return `<p>${inner}</p>`;
+            }).join('');
+        }
+
+        function sendMessageToAI(userMessage) {
+            const honeypotVal = $find('#shihela-hp').val() || '';
+
+            const payload = {
+                message: userMessage,
+                post_id: shihelaContextualSiteAssistantPublic.post_id,
+                history: chatHistory,
+                session_id: chatSessionId,
+                hp_value: honeypotVal
+            };
+
+            fetch(shihelaContextualSiteAssistantPublic.rest_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': shihelaContextualSiteAssistantPublic.nonce
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.response) {
+                    const reply = data.response;
+                    appendMessage('assistant', reply);
+
+                    chatHistory.push({ role: 'user', content: userMessage });
+                    chatHistory.push({ role: 'assistant', content: reply });
+                    saveChatHistory();
+                } else {
+                    appendMessage('assistant', shihelaContextualSiteAssistantPublic.error_response);
+                }
+            })
+            .catch(error => {
+                const errorMsg = error.message || shihelaContextualSiteAssistantPublic.error_connection;
+                appendMessage('assistant', errorMsg);
+            })
+            .finally(() => {
+                // [PERFORMA] Buka kembali kunci proses baik saat sukses maupun gagal
+                isProcessing = false;
+                toggleLoading(false);
+            });
+        }
+
+        function saveChatHistory() {
+            try {
+                sessionStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
+            } catch (e) {
+                console.error('Failed to save chat history to sessionStorage', e);
+            }
+        }
+
+        function initChatHistory() {
+            try {
+                const saved = sessionStorage.getItem(chatHistoryKey);
+                if (saved) {
+                    chatHistory = JSON.parse(saved);
+                    chatHistory.forEach(msg => {
+                        appendMessage(msg.role, msg.content);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to initialize chat history from sessionStorage', e);
+            }
+        }
+    });
 })(jQuery);

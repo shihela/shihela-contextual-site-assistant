@@ -45,6 +45,7 @@
         const $closeBtn = $find('#shihela-contextual-site-assistant-close-panel');
         const $resetBtn = $find('#shihela-contextual-site-assistant-reset-chat');
         const $messagesBody = $find('#shihela-contextual-site-assistant-messages-body');
+        const $chipsContainer = $find('#shihela-contextual-site-assistant-chips-container');
         const $form = $find('#shihela-contextual-site-assistant-chat-form');
         const $input = $find('#shihela-contextual-site-assistant-chat-input');
         const $submitBtn = $find('#shihela-contextual-site-assistant-chat-submit');
@@ -87,6 +88,43 @@
 
         // Load history from session storage if exists
         initChatHistory();
+        renderSuggestionChips();
+
+        function renderSuggestionChips() {
+            if (!$chipsContainer || !$chipsContainer.length) return;
+            const chips = (typeof shihelaContextualSiteAssistantPublic !== 'undefined' && shihelaContextualSiteAssistantPublic.suggestion_chips) ? shihelaContextualSiteAssistantPublic.suggestion_chips : [];
+            
+            if (!Array.isArray(chips) || chips.length === 0) {
+                $chipsContainer.hide();
+                return;
+            }
+
+            let chipsHtml = '';
+            chips.forEach(function(chipText) {
+                if (chipText && chipText.trim()) {
+                    const escText = $('<div>').text(chipText.trim()).html();
+                    chipsHtml += `<button type="button" class="shihela-contextual-site-assistant-chip" data-prompt="${escText}">${escText}</button>`;
+                }
+            });
+
+            if (chipsHtml) {
+                $chipsContainer.html(chipsHtml).show();
+            } else {
+                $chipsContainer.hide();
+            }
+        }
+
+        // Delegated click handler for suggestion chips
+        $chipsContainer.on('click', '.shihela-contextual-site-assistant-chip', function(e) {
+            e.preventDefault();
+            if (isProcessing) return;
+
+            const promptText = $(this).attr('data-prompt') || $(this).text();
+            if (!promptText) return;
+
+            $input.val(promptText);
+            $form.trigger('submit');
+        });
 
         // Enforce max character limit on input
         if (shihelaContextualSiteAssistantPublic.max_length) {

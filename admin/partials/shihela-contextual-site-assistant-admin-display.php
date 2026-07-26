@@ -20,6 +20,7 @@ if ( ! defined( 'WPINC' ) ) {
 $shihela_contextual_site_assistant_bot_name            = get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' );
 $shihela_contextual_site_assistant_welcome_message     = get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant. How can I help you today?' );
 $shihela_contextual_site_assistant_system_instructions = get_option( 'shihela_contextual_site_assistant_system_instructions', '' );
+$shihela_contextual_site_assistant_suggestion_chips    = get_option( 'shihela_contextual_site_assistant_suggestion_chips', "How can you help me?\nWhat services are offered?\nHow to contact human support?" );
 $shihela_contextual_site_assistant_theme_color         = get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' );
 $shihela_contextual_site_assistant_widget_position     = get_option( 'shihela_contextual_site_assistant_widget_position', 'bottom-right' );
 $shihela_contextual_site_assistant_webhook_url         = get_option( 'shihela_contextual_site_assistant_webhook_url', '' );
@@ -71,6 +72,12 @@ $shihela_contextual_site_assistant_ip_daily_limit      = get_option( 'shihela_co
 							<label for="shihela_contextual_site_assistant_system_instructions"><?php esc_html_e( 'Global Context & Instructions', 'shihela-contextual-site-assistant' ); ?></label>
 							<textarea name="shihela_contextual_site_assistant_system_instructions" id="shihela_contextual_site_assistant_system_instructions" rows="6" class="large-text shihela-contextual-site-assistant-textarea" placeholder="<?php esc_attr_e( 'Write custom details about your website, business hours, services, or support protocols here. The AI will refer to this context when answering inquiries.', 'shihela-contextual-site-assistant' ); ?>"><?php echo esc_textarea( $shihela_contextual_site_assistant_system_instructions ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'Give the AI specific guidelines on what it should represent (e.g. "You are an e-commerce assistant. Do not talk about coding. Suggest customers email sales@example.com for refunds.").', 'shihela-contextual-site-assistant' ); ?></p>
+						</div>
+
+						<div class="shihela-contextual-site-assistant-form-group">
+							<label for="shihela_contextual_site_assistant_suggestion_chips"><?php esc_html_e( 'Quick Suggestion Chips (Preset Prompts)', 'shihela-contextual-site-assistant' ); ?></label>
+							<textarea name="shihela_contextual_site_assistant_suggestion_chips" id="shihela_contextual_site_assistant_suggestion_chips" rows="3" class="large-text shihela-contextual-site-assistant-textarea" placeholder="<?php esc_attr_e( 'Enter preset questions (one per line)...', 'shihela-contextual-site-assistant' ); ?>"><?php echo esc_textarea( $shihela_contextual_site_assistant_suggestion_chips ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Enter predefined prompt questions for visitors to click (one prompt question per line).', 'shihela-contextual-site-assistant' ); ?></p>
 						</div>
 
 						<div class="shihela-contextual-site-assistant-form-group">

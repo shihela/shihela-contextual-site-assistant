@@ -3,7 +3,7 @@ Contributors: shihela
 Tags: ai-client, customer-support, lead-generation, ai-assistant, wordpress-ai
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://gnu.org
@@ -24,6 +24,9 @@ The plugin also automatically captures leads when visitors leave their contact i
 * **WordPress Native AI Client:** Fully integrated with the native WordPress 7.0+ AI Client API.
 * **Provider Agnostic:** Out-of-the-box support for any LLM provider configured in your WordPress dashboard (Gemini, OpenAI, Anthropic, etc.).
 * **Lead Capture & Management:** Automatically parses and saves customer inquiries in the WordPress database and notifies administrators.
+* **Quick Suggestion Chips:** Present predefined prompt chips to guide visitor inquiries.
+* **Lead CSV Export:** Export captured leads to CSV directly from the WordPress Admin table.
+* **Developer Hooks & Filters:** Extensible action hooks (shihela_assistant_lead_captured) and filters (shihela_assistant_chat_context, shihela_assistant_system_prompt).
 * **Custom Positioning & Styling:** Set widget position (bottom-right, bottom-left, top-right, top-left) and customize branding colors.
 * **Premium Design:** Sleek layout featuring glassmorphic effects, responsive styles, typing animation loaders, and chat session histories.
 * **Rate Limiting:** Built-in server-side IP rate limiting protecting your server and API limits from bot abuse.
@@ -37,7 +40,7 @@ This plugin utilizes the native WordPress AI Client to communicate with generati
 1. Upload the `shihela-contextual-site-assistant` folder to the `/wp-content/plugins/` directory, or search for "Shihela Contextual Site Assistant" via the WordPress plugin dashboard and click Install.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
 3. Configure your preferred AI Provider globally in the WordPress admin panel under **Settings > Connectors**.
-4. Navigate to **Shihela Site Assistant** in the WordPress admin panel sidebar to customize your chatbot branding and greeting instructions.
+4. Navigate to **Shihela Site Assistant** in the WordPress admin panel sidebar to customize your chatbot branding, greeting instructions, and quick suggestion chips.
 5. Save changes and the widget will appear on your front-end pages.
 
 == Frequently Asked Questions ==
@@ -55,6 +58,12 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 3. screenshot-3.png - Lead management system showing captured contact data and metrics.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added Quick Suggestion Chips (Preset Prompts) for visitors.
+* Added Lead Data CSV Export functionality in Admin dashboard.
+* Introduced extensible developer action hooks (shihela_assistant_lead_captured) and filters (shihela_assistant_chat_context, shihela_assistant_system_prompt, shihela_assistant_chat_response).
+* Enhanced accessibility (WCAG 2.1 AA) and performance controls.
 
 = 1.0.0 =
 * Initial release of Shihela Contextual Site Assistant widget.

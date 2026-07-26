@@ -274,6 +274,12 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'default'           => '',
 		) );
 
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_suggestion_chips', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'default'           => "How can you help me?\nWhat services are offered?\nHow to contact human support?",
+		) );
+
 		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_theme_color', array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_hex_color',

@@ -77,6 +77,16 @@ class Shihela_Contextual_Site_Assistant_Public {
 		$ip                  = $this->get_visitor_ip();
 		$daily_limit_reached = $this->is_daily_limit_reached() || $this->is_ip_daily_limit_reached( $ip );
 
+		$raw_chips   = get_option( 'shihela_contextual_site_assistant_suggestion_chips', "How can you help me?\nWhat services are offered?\nHow to contact human support?" );
+		$chips_array = array_filter( array_map( 'trim', explode( "\n", $raw_chips ) ) );
+		/**
+		 * Filter suggestion chips array localized to front-end widget.
+		 *
+		 * @since 1.1.0
+		 * @param array $chips_array Array of chip strings.
+		 */
+		$chips_array = apply_filters( 'shihela_assistant_suggestion_chips', array_values( $chips_array ) );
+
 		wp_enqueue_script( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/js/shihela-contextual-site-assistant-public.js', array( 'jquery' ), $this->version, true );
 		wp_localize_script( $this->plugin_name, 'shihelaContextualSiteAssistantPublic', array(
 			'rest_url'            => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
@@ -92,6 +102,7 @@ class Shihela_Contextual_Site_Assistant_Public {
 			'max_length'          => (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ),
 			'daily_limit_reached' => $daily_limit_reached,
 			'error_daily_limit'   => __( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
+			'suggestion_chips'    => $chips_array,
 		) );
 	}
 
@@ -221,6 +232,14 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function handle_chat_request( $request ) {
+		/**
+		 * Action hook fired before processing REST API chat request.
+		 *
+		 * @since 1.1.0
+		 * @param WP_REST_Request $request REST API request object.
+		 */
+		do_action( 'shihela_assistant_before_chat_request', $request );
+
 		// Increment limit counters and rate limit keys (safe side-effects inside controller)
 		$ip = $this->get_visitor_ip();
 		$this->increment_daily_count();
@@ -298,6 +317,18 @@ class Shihela_Contextual_Site_Assistant_Public {
 							'session_id'   => $session_id,
 						)
 					);
+					$new_lead_id = $wpdb->insert_id;
+
+					/**
+					 * Action hook fired after a new lead is captured and saved.
+					 *
+					 * @since 1.1.0
+					 * @param int    $new_lead_id Database ID of newly created lead.
+					 * @param array  $lead_data   Array of lead details (name, contact, details).
+					 * @param string $page_url    Page URL origin.
+					 * @param string $session_id  Chat session identifier.
+					 */
+					do_action( 'shihela_assistant_lead_captured', $new_lead_id, $lead_data, $page_url, $session_id );
 
 					// Send notification email to Admin
 					$admin_email = sanitize_email( get_option( 'admin_email' ) );
@@ -338,7 +369,7 @@ class Shihela_Contextual_Site_Assistant_Public {
 					if ( ! empty( $webhook_url ) ) {
 						$lead_payload = array(
 							'event'      => 'lead_captured',
-							'lead_id'    => $wpdb->insert_id,
+							'lead_id'    => $new_lead_id,
 							'lead_date'  => current_time( 'mysql' ),
 							'name'       => $name,
 							'contact'    => $contact,

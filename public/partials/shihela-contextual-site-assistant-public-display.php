@@ -70,6 +70,9 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 			</div>
 		</div>
 
+		<!-- Quick Suggestion Chips Container -->
+		<div id="shihela-contextual-site-assistant-chips-container" class="shihela-contextual-site-assistant-chips-container"></div>
+
 		<!-- Footer Input Field -->
 		<footer class="shihela-contextual-site-assistant-panel-footer">
 			<form id="shihela-contextual-site-assistant-chat-form" class="shihela-contextual-site-assistant-chat-form">

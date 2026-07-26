@@ -65,6 +65,8 @@ class Shihela_Contextual_Site_Assistant_API {
 			}
 		}
 
+		$response = '';
+
 		// 1. Try fully configured builder (native system instructions + temperature + history)
 		$builder = wp_ai_client_prompt( $message )
 			->using_system_instruction( $system_prompt )
@@ -73,60 +75,73 @@ class Shihela_Contextual_Site_Assistant_API {
 			$builder->with_history( ...$wp_history );
 		}
 		if ( $builder->is_supported_for_text_generation() ) {
-			return $builder->generate_text();
+			$response = $builder->generate_text();
+		} elseif ( true ) {
+			// 2. Fallback: Try without temperature (system instructions + history)
+			$builder = wp_ai_client_prompt( $message )
+				->using_system_instruction( $system_prompt );
+			if ( ! empty( $wp_history ) ) {
+				$builder->with_history( ...$wp_history );
+			}
+			if ( $builder->is_supported_for_text_generation() ) {
+				$response = $builder->generate_text();
+			} elseif ( true ) {
+				// 3. Fallback: Prepend system prompt to user message (no native system instructions, keep temperature + history)
+				$appended_message = $system_prompt . "\n\n" . $message;
+				$builder = wp_ai_client_prompt( $appended_message )
+					->using_temperature( 0.7 );
+				if ( ! empty( $wp_history ) ) {
+					$builder->with_history( ...$wp_history );
+				}
+				if ( $builder->is_supported_for_text_generation() ) {
+					$response = $builder->generate_text();
+				} elseif ( true ) {
+					// 4. Fallback: Prepend system prompt, no temperature, keep history
+					$builder = wp_ai_client_prompt( $appended_message );
+					if ( ! empty( $wp_history ) ) {
+						$builder->with_history( ...$wp_history );
+					}
+					if ( $builder->is_supported_for_text_generation() ) {
+						$response = $builder->generate_text();
+					} elseif ( true ) {
+						// 5. Fallback: Format history manually inside prompt text (no native history, keep temperature)
+						$manual_history_prompt = $system_prompt . "\n\n";
+						if ( ! empty( $chat_history ) ) {
+							$manual_history_prompt .= "Conversation History:\n" . $this->format_history_as_text( $chat_history ) . "\n";
+						}
+						$manual_history_prompt .= "Visitor: " . $message . "\nAssistant:";
+
+						$builder = wp_ai_client_prompt( $manual_history_prompt )
+							->using_temperature( 0.7 );
+						if ( $builder->is_supported_for_text_generation() ) {
+							$response = $builder->generate_text();
+						} elseif ( true ) {
+							// 6. Fallback: Most basic prompt
+							$builder = wp_ai_client_prompt( $manual_history_prompt );
+							if ( $builder->is_supported_for_text_generation() ) {
+								$response = $builder->generate_text();
+							} else {
+								$response = $base_builder->generate_text();
+							}
+						}
+					}
+				}
+			}
 		}
 
-		// 2. Fallback: Try without temperature (system instructions + history)
-		$builder = wp_ai_client_prompt( $message )
-			->using_system_instruction( $system_prompt );
-		if ( ! empty( $wp_history ) ) {
-			$builder->with_history( ...$wp_history );
-		}
-		if ( $builder->is_supported_for_text_generation() ) {
-			return $builder->generate_text();
+		if ( is_wp_error( $response ) ) {
+			return $response;
 		}
 
-		// 3. Fallback: Prepend system prompt to user message (no native system instructions, keep temperature + history)
-		$appended_message = $system_prompt . "\n\n" . $message;
-		$builder = wp_ai_client_prompt( $appended_message )
-			->using_temperature( 0.7 );
-		if ( ! empty( $wp_history ) ) {
-			$builder->with_history( ...$wp_history );
-		}
-		if ( $builder->is_supported_for_text_generation() ) {
-			return $builder->generate_text();
-		}
-
-		// 4. Fallback: Prepend system prompt, no temperature, keep history
-		$builder = wp_ai_client_prompt( $appended_message );
-		if ( ! empty( $wp_history ) ) {
-			$builder->with_history( ...$wp_history );
-		}
-		if ( $builder->is_supported_for_text_generation() ) {
-			return $builder->generate_text();
-		}
-
-		// 5. Fallback: Format history manually inside prompt text (no native history, keep temperature)
-		$manual_history_prompt = $system_prompt . "\n\n";
-		if ( ! empty( $chat_history ) ) {
-			$manual_history_prompt .= "Conversation History:\n" . $this->format_history_as_text( $chat_history ) . "\n";
-		}
-		$manual_history_prompt .= "Visitor: " . $message . "\nAssistant:";
-
-		$builder = wp_ai_client_prompt( $manual_history_prompt )
-			->using_temperature( 0.7 );
-		if ( $builder->is_supported_for_text_generation() ) {
-			return $builder->generate_text();
-		}
-
-		// 6. Fallback: Most basic prompt (manual history, no temperature, no native system instructions, no native history)
-		$builder = wp_ai_client_prompt( $manual_history_prompt );
-		if ( $builder->is_supported_for_text_generation() ) {
-			return $builder->generate_text();
-		}
-
-		// Last resort: Fallback to the base builder
-		return $base_builder->generate_text();
+		/**
+		 * Filter the generated response text before sending back to the visitor.
+		 *
+		 * @since 1.1.0
+		 * @param string $response The AI generated text response.
+		 * @param string $message  The user query message.
+		 * @param int    $post_id  The current page/post ID.
+		 */
+		return apply_filters( 'shihela_assistant_chat_response', $response, $message, $post_id );
 	}
 
 	/**
@@ -157,28 +172,33 @@ class Shihela_Contextual_Site_Assistant_API {
 	 * @return   string Content description or empty.
 	 */
 	private function get_page_context( $post_id ) {
-		if ( ! $post_id ) {
-			return '';
+		$context = '';
+
+		if ( $post_id ) {
+			$post = get_post( $post_id );
+			if ( $post ) {
+				$title     = $post->post_title;
+				$permalink = get_permalink( $post_id );
+				$excerpt   = $post->post_excerpt;
+				$content   = wp_strip_all_tags( wp_trim_words( $post->post_content, 500 ) );
+
+				$context  = "Page Title: " . $title . "\n";
+				$context .= "Page URL: " . $permalink . "\n";
+				if ( ! empty( $excerpt ) ) {
+					$context .= "Page Excerpt: " . $excerpt . "\n";
+				}
+				$context .= "Page Content Text:\n" . $content . "\n";
+			}
 		}
 
-		$post = get_post( $post_id );
-		if ( ! $post ) {
-			return '';
-		}
-
-		$title = $post->post_title;
-		$permalink = get_permalink( $post_id );
-		$excerpt = $post->post_excerpt;
-		$content = wp_strip_all_tags( wp_trim_words( $post->post_content, 500 ) );
-
-		$context = "Page Title: " . $title . "\n";
-		$context .= "Page URL: " . $permalink . "\n";
-		if ( ! empty( $excerpt ) ) {
-			$context .= "Page Excerpt: " . $excerpt . "\n";
-		}
-		$context .= "Page Content Text:\n" . $content . "\n";
-
-		return $context;
+		/**
+		 * Filter the extracted page context before generating AI response.
+		 *
+		 * @since 1.1.0
+		 * @param string $context Computed page context text.
+		 * @param int    $post_id Current post ID.
+		 */
+		return apply_filters( 'shihela_assistant_chat_context', $context, $post_id );
 	}
 
 	/**
@@ -189,12 +209,12 @@ class Shihela_Contextual_Site_Assistant_API {
 	 * @return   string System prompt.
 	 */
 	private function build_system_prompt( $page_context ) {
-		$bot_name = get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' );
-		$site_name = get_bloginfo( 'name' );
-		$site_url = get_home_url();
+		$bot_name     = get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' );
+		$site_name    = get_bloginfo( 'name' );
+		$site_url     = get_home_url();
 		$instructions = get_option( 'shihela_contextual_site_assistant_system_instructions', '' );
 
-		$prompt = "You are a helpful, professional AI assistant named '{$bot_name}' for the website '{$site_name}' ({$site_url}).\n";
+		$prompt  = "You are a helpful, professional AI assistant named '{$bot_name}' for the website '{$site_name}' ({$site_url}).\n";
 		$prompt .= "Strict Guidelines:\n";
 		$prompt .= "1. Help the website visitor to the best of your ability.\n";
 		$prompt .= "2. Be polite, clear, and professional. Keep responses concise where appropriate.\n";
@@ -216,6 +236,13 @@ class Shihela_Contextual_Site_Assistant_API {
 		$prompt .= "Make sure the JSON is valid, contains no line breaks inside the JSON object itself, and is placed at the very end of your message. Do not mention this tag or protocol to the user.\n";
 		$prompt .= "CRITICAL: Once the [LEAD: ...] tag has been outputted once and exists in the chat history, you MUST NOT repeat or append it again in subsequent replies during the rest of the conversation.\n";
 
-		return $prompt;
+		/**
+		 * Filter system prompt instructions before sending to AI Client.
+		 *
+		 * @since 1.1.0
+		 * @param string $prompt       Compiled system prompt string.
+		 * @param string $page_context Current page context.
+		 */
+		return apply_filters( 'shihela_assistant_system_prompt', $prompt, $page_context );
 	}
 }

@@ -173,7 +173,7 @@ $shihela_contextual_site_assistant_ip_daily_limit      = get_option( 'shihela_co
 				<ol>
 					<li><?php esc_html_e( 'Configure your branding and system instructions below.', 'shihela-contextual-site-assistant' ); ?></li>
 					<li><?php esc_html_e( 'The assistant is automatically injected in the bottom right corner of your public site pages.', 'shihela-contextual-site-assistant' ); ?></li>
-					<li><?php esc_html_e( 'When a visitor asks a question, the plugin automatically retrieves the current page title and up to 500 words of content, feeding it as page context directly into the AI request.', 'shihela-contextual-site-assistant' ); ?></li>
+					<li><?php esc_html_e( 'When a visitor asks a question, the plugin automatically retrieves the current page title and up to 1000 words of content, feeding it as page context directly into the AI request.', 'shihela-contextual-site-assistant' ); ?></li>
 					<li><?php esc_html_e( 'This allows the AI to answer contextually about the exact page the user is currently viewing!', 'shihela-contextual-site-assistant' ); ?></li>
 				</ol>
 			</div>

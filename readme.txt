@@ -46,7 +46,7 @@ This plugin utilizes the native WordPress AI Client to communicate with generati
 == Frequently Asked Questions ==
 
 = How does the AI know the page context? =
-When a chat is initiated, the plugin retrieves the current page ID and queries WordPress for its title and plain text body. The first 500 words are sent along with the prompt to provide the context.
+When a chat is initiated, the plugin retrieves the current page ID and queries WordPress for its title and content. Shortcodes, HTML tags, and script/style tags are stripped, and up to 1,000 words of pure text content are sent along with the prompt to provide accurate context.
 
 = Can I choose which AI provider to use? =
 Yes. You can manage and switch your AI providers globally inside WordPress under **Settings > Connectors**. This plugin automatically uses whichever model and credentials are set as default by the administrator.
@@ -60,6 +60,7 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 == Changelog ==
 
 = 1.1.0 =
+* Enhanced page context extraction: thorough HTML, shortcode, and script/style sanitization prior to word trimming, increased pure-text context reading to 1,000 words.
 * Added Quick Suggestion Chips (Preset Prompts) for visitors.
 * Added Lead Data CSV Export functionality in Admin dashboard.
 * Introduced extensible developer action hooks (shihela_assistant_lead_captured) and filters (shihela_assistant_chat_context, shihela_assistant_system_prompt, shihela_assistant_chat_response).

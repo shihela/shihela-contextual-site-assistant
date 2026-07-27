@@ -165,7 +165,7 @@ class Shihela_Contextual_Site_Assistant_API {
 	}
 
 	/**
-	 * Get plain text content context of the current post.
+	 * Get plain text content context of the current post with comprehensive sanitization.
 	 *
 	 * @since    1.0.0
 	 * @param    int $post_id The page/post ID.
@@ -177,17 +177,36 @@ class Shihela_Contextual_Site_Assistant_API {
 		if ( $post_id ) {
 			$post = get_post( $post_id );
 			if ( $post ) {
-				$title     = $post->post_title;
-				$permalink = get_permalink( $post_id );
-				$excerpt   = $post->post_excerpt;
-				$content   = wp_strip_all_tags( wp_trim_words( $post->post_content, 500 ) );
+				$title           = $post->post_title;
+				$permalink       = get_permalink( $post_id );
+				$excerpt         = $this->sanitize_page_text( $post->post_excerpt );
+				$raw_content     = $post->post_content;
+				
+				// Clean raw content first, THEN trim to 600 pure text words
+				$clean_content   = $this->sanitize_page_text( $raw_content );
+				$trimmed_content = wp_trim_words( $clean_content, 1000, '...' );
 
 				$context  = "Page Title: " . $title . "\n";
 				$context .= "Page URL: " . $permalink . "\n";
+
+				// Extract Post Taxonomies (Categories & Tags)
+				$categories = get_the_category( $post_id );
+				if ( ! empty( $categories ) && ! is_wp_error( $categories ) ) {
+					$cat_names = wp_list_pluck( $categories, 'name' );
+					$context .= "Categories: " . implode( ', ', $cat_names ) . "\n";
+				}
+				$tags = get_the_tags( $post_id );
+				if ( ! empty( $tags ) && ! is_wp_error( $tags ) ) {
+					$tag_names = wp_list_pluck( $tags, 'name' );
+					$context .= "Tags: " . implode( ', ', $tag_names ) . "\n";
+				}
+
 				if ( ! empty( $excerpt ) ) {
 					$context .= "Page Excerpt: " . $excerpt . "\n";
 				}
-				$context .= "Page Content Text:\n" . $content . "\n";
+				if ( ! empty( $trimmed_content ) ) {
+					$context .= "Page Content Text:\n" . $trimmed_content . "\n";
+				}
 			}
 		}
 
@@ -199,6 +218,46 @@ class Shihela_Contextual_Site_Assistant_API {
 		 * @param int    $post_id Current post ID.
 		 */
 		return apply_filters( 'shihela_assistant_chat_context', $context, $post_id );
+	}
+
+	/**
+	 * Clean HTML tags, shortcodes, scripts, styles, and extra whitespaces from raw text content.
+	 *
+	 * @since    1.2.0
+	 * @param    string $content Raw content string.
+	 * @return   string Cleaned text.
+	 */
+	private function sanitize_page_text( $content ) {
+		if ( empty( $content ) ) {
+			return '';
+		}
+
+		// 1. Remove shortcode tags
+		$content = strip_shortcodes( $content );
+
+		// 2. Remove script and style tags along with their inner content
+		$content = preg_replace( '/<script\b[^>]*>(.*?)<\/script>/is', '', $content );
+		$content = preg_replace( '/<style\b[^>]*>(.*?)<\/style>/is', '', $content );
+
+		// 3. Convert HTML line break tags to actual newlines before stripping HTML tags
+		$content = preg_replace( '/<br\s*\/?>/i', "\n", $content );
+		$content = preg_replace( '/<\/p>/i', "\n\n", $content );
+		$content = preg_replace( '/<\/h[1-6]>/i', "\n\n", $content );
+		$content = preg_replace( '/<\/li>/i', "\n", $content );
+
+		// 4. Strip all remaining HTML tags securely
+		$content = wp_strip_all_tags( $content, true );
+
+		// 5. Decode HTML entities (&amp;, &quot;, &nbsp;, etc.)
+		$content = html_entity_decode( $content, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+
+		// 6. Normalize whitespaces (tabs, non-breaking spaces, excessive spaces and newlines)
+		$content = str_replace( array( "\r\n", "\r" ), "\n", $content );
+		$content = preg_replace( '/[ \t]+/', ' ', $content );
+		$content = preg_replace( '/\n[ \t]+/', "\n", $content );
+		$content = preg_replace( '/\n{3,}/', "\n\n", $content );
+
+		return trim( $content );
 	}
 
 	/**

@@ -33,6 +33,9 @@ class Shihela_Contextual_Site_Assistant_Activator {
 			'shihela_contextual_site_assistant_welcome_message'     => 'Hello! I am your AI assistant. How can I help you today?',
 			'shihela_contextual_site_assistant_system_instructions' => 'You are a helpful, professional customer support AI assistant for this website. Answer the user\'s questions using the provided page context and global context. If you cannot find the answer in the context, politely suggest checking other pages or contacting support, but still answer to the best of your ability with general knowledge.',
 			'shihela_contextual_site_assistant_theme_color'         => '#4f46e5', // Sleek indigo
+			'shihela_contextual_site_assistant_whatsapp_number'     => '',
+			'shihela_contextual_site_assistant_whatsapp_message'    => 'Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan.',
+			'shihela_contextual_site_assistant_whatsapp_header_btn' => '1',
 		);
 
 		foreach ( $default_settings as $key => $default_value ) {

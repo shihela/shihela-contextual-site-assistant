@@ -47,6 +47,17 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 				</div>
 			</div>
 			<div class="shihela-contextual-site-assistant-header-actions" style="display: flex; align-items: center; gap: 6px;">
+				<?php
+				$shihela_wa_num    = get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' );
+				$shihela_wa_header = get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' );
+				if ( ! empty( $shihela_wa_num ) && '1' === $shihela_wa_header ) :
+				?>
+					<button id="shihela-contextual-site-assistant-header-wa-btn" class="shihela-contextual-site-assistant-header-wa-btn" aria-label="<?php esc_attr_e( 'Contact CS on WhatsApp', 'shihela-contextual-site-assistant' ); ?>" title="<?php esc_attr_e( 'Chat via WhatsApp', 'shihela-contextual-site-assistant' ); ?>">
+						<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+							<path d="M12.012 2C6.5 2 2.012 6.48 2.012 12c0 2.07.63 3.99 1.71 5.58L2 22l4.56-1.68c1.53.97 3.35 1.54 5.44 1.54 5.51 0 10-4.48 10-10S17.522 2 12.012 2zm.01 17.86c-1.8 0-3.47-.51-4.9-1.39l-.35-.21-2.71.99.88-2.61-.23-.37a7.84 7.84 0 0 1-1.22-4.27c0-4.34 3.53-7.86 7.87-7.86 4.34 0 7.86 3.52 7.86 7.86 0 4.34-3.52 7.86-7.86 7.86zm4.31-5.88c-.24-.12-1.41-.7-1.63-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.93-1.19-.71-.63-1.19-1.41-1.33-1.65-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.31-.74-1.79-.2-.47-.4-.41-.54-.42h-.46c-.16 0-.42.06-.64.3-.22.24-.85.83-.85 2.03 0 1.2.87 2.36 1 2.52.12.16 1.72 2.63 4.17 3.69.58.25 1.04.4 1.39.51.59.19 1.12.16 1.54.1.47-.07 1.41-.58 1.61-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28z"/>
+						</svg>
+					</button>
+				<?php endif; ?>
 				<button id="shihela-contextual-site-assistant-reset-chat" class="shihela-contextual-site-assistant-reset-chat" aria-label="<?php esc_attr_e( 'Reset conversation', 'shihela-contextual-site-assistant' ); ?>" title="<?php esc_attr_e( 'Reset Chat', 'shihela-contextual-site-assistant' ); ?>">
 					<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path d="M4 4V9H4.5M4.5 9C5.39567 7.07223 7.07065 5.6174 9.12353 4.90807C11.1764 4.19875 13.4357 4.29367 15.4223 5.17242C17.4089 6.05118 18.96 7.64095 19.7423 9.59972C20.5247 11.5585 20.4739 13.7258 19.6008 15.645C18.7276 17.5642 17.103 19.0805 15.0768 19.8659C13.0506 20.6514 10.7937 20.6408 8.79093 19.8364C6.78813 19.0321 5.20455 17.498 4.38139 15.5656C3.55823 13.6332 3.56272 11.4589 4.39396 9.5M4.5 9H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

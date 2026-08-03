@@ -295,6 +295,13 @@ class Shihela_Contextual_Site_Assistant_API {
 		$prompt .= "Make sure the JSON is valid, contains no line breaks inside the JSON object itself, and is placed at the very end of your message. Do not mention this tag or protocol to the user.\n";
 		$prompt .= "CRITICAL: Once the [LEAD: ...] tag has been outputted once and exists in the chat history, you MUST NOT repeat or append it again in subsequent replies during the rest of the conversation.\n";
 
+		// WhatsApp CS Protocol (v1.2.0)
+		$wa_number = get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' );
+		if ( ! empty( $wa_number ) ) {
+			$prompt .= "\nWhatsApp Support Protocol:\n";
+			$prompt .= "If the visitor asks to speak with customer support, contact admin, asks for WhatsApp/phone number, or requires direct human assistance, you MUST offer to connect them via WhatsApp and append the tag [WHATSAPP_BTN] (or [WHATSAPP_BTN: custom button label]) in your reply. The system will render this tag as an interactive WhatsApp button.\n";
+		}
+
 		/**
 		 * Filter system prompt instructions before sending to AI Client.
 		 *

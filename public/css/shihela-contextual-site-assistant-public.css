@@ -540,3 +540,66 @@
 .shihela-contextual-site-assistant-chip:active {
 	transform: translateY(0);
 }
+
+/* WhatsApp CTA Button Styling (v1.2.0) */
+.shihela-wa-btn-container {
+	margin-top: 10px;
+	margin-bottom: 4px;
+	display: block;
+}
+
+.shihela-contextual-site-assistant-whatsapp-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	background: linear-gradient(135deg, #25d366 0%, #128c7e 100%) !important;
+	color: #ffffff !important;
+	text-decoration: none !important;
+	font-weight: 600 !important;
+	font-size: 13px !important;
+	padding: 9px 16px !important;
+	border-radius: 20px !important;
+	box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3) !important;
+	transition: all 0.2s ease-in-out !important;
+}
+
+.shihela-contextual-site-assistant-whatsapp-btn:hover {
+	transform: translateY(-2px) scale(1.02) !important;
+	box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4) !important;
+	color: #ffffff !important;
+}
+
+.shihela-contextual-site-assistant-whatsapp-btn svg {
+	width: 18px !important;
+	height: 18px !important;
+	fill: currentColor !important;
+	flex-shrink: 0 !important;
+}
+
+/* Header WhatsApp Quick Button */
+.shihela-contextual-site-assistant-header-wa-btn {
+	background: rgba(37, 211, 102, 0.15) !important;
+	border: none !important;
+	color: #25d366 !important;
+	width: 32px !important;
+	height: 32px !important;
+	border-radius: 50% !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	cursor: pointer !important;
+	transition: all 0.2s ease !important;
+	padding: 0 !important;
+}
+
+.shihela-contextual-site-assistant-header-wa-btn:hover {
+	background: #25d366 !important;
+	color: #ffffff !important;
+	transform: scale(1.08) !important;
+}
+
+.shihela-contextual-site-assistant-header-wa-btn svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+

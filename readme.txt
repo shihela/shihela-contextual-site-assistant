@@ -3,7 +3,7 @@ Contributors: shihela
 Tags: ai-client, customer-support, lead-generation, ai-assistant, wordpress-ai
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://gnu.org
@@ -22,6 +22,8 @@ The plugin also automatically captures leads when visitors leave their contact i
 
 * **Context-Aware Responses:** Automatically reads page contents to answer questions in context.
 * **WordPress Native AI Client:** Fully integrated with the native WordPress 7.0+ AI Client API.
+* **WhatsApp Admin / CS Integration:** Direct WhatsApp contact button in chat and header with dynamic page context pre-filled messages.
+* **Modern SaaS Tabbed Admin UI:** Sleek, organized 5-tab settings layout for effortless plugin management.
 * **Provider Agnostic:** Out-of-the-box support for any LLM provider configured in your WordPress dashboard (Gemini, OpenAI, Anthropic, etc.).
 * **Lead Capture & Management:** Automatically parses and saves customer inquiries in the WordPress database and notifies administrators.
 * **Quick Suggestion Chips:** Present predefined prompt chips to guide visitor inquiries.
@@ -49,7 +51,7 @@ This plugin utilizes the native WordPress AI Client to communicate with generati
 When a chat is initiated, the plugin retrieves the current page ID and queries WordPress for its title and content. Shortcodes, HTML tags, and script/style tags are stripped, and up to 1,000 words of pure text content are sent along with the prompt to provide accurate context.
 
 = Can I choose which AI provider to use? =
-Yes. You can manage and switch your AI providers globally inside WordPress under **Settings > Connectors**. This plugin automatically uses whichever model and credentials are set as default by the administrator.
+Yes. You can manage and switch your AI providers globally inside WordPress under **Settings > Connectors**. This plugin automatically uses whichever model and credits are set as default by the administrator.
 
 == Screenshots ==
 
@@ -58,6 +60,12 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 3. screenshot-3.png - Lead management system showing captured contact data and metrics.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added WhatsApp Admin/CS Integration: Support for Admin WhatsApp phone number, custom pre-filled message with page context, and in-chat Click to WA CTA button.
+* Added optional WhatsApp Quick-Access button in chat widget header bar.
+* Redesigned WordPress Admin Settings page into a modern, responsive SaaS-style Tabbed UI (5 organized tabs).
+* Added automated WhatsApp intent detection protocol in system prompt.
 
 = 1.1.0 =
 * Enhanced page context extraction: thorough HTML, shortcode, and script/style sanitization prior to word trimming, increased pure-text context reading to 1,000 words.

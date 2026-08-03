@@ -87,22 +87,32 @@ class Shihela_Contextual_Site_Assistant_Public {
 		 */
 		$chips_array = apply_filters( 'shihela_assistant_suggestion_chips', array_values( $chips_array ) );
 
+		$post_id    = get_the_ID() ? get_the_ID() : 0;
+		$page_title = $post_id ? get_the_title( $post_id ) : get_bloginfo( 'name' );
+		$page_url   = $post_id ? get_permalink( $post_id ) : get_home_url();
+
 		wp_enqueue_script( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/js/shihela-contextual-site-assistant-public.js', array( 'jquery' ), $this->version, true );
 		wp_localize_script( $this->plugin_name, 'shihelaContextualSiteAssistantPublic', array(
-			'rest_url'            => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
-			'nonce'               => wp_create_nonce( 'wp_rest' ), // Standard WP REST API Nonce
-			'css_url'             => SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css',
-			'bot_name'            => esc_html( get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
-			'welcome_message'     => esc_html( get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant.' ) ),
-			'theme_color'         => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
-			'post_id'             => get_the_ID() ? get_the_ID() : 0,
-			'reset_confirm'       => __( 'Are you sure you want to reset this conversation?', 'shihela-contextual-site-assistant' ),
-			'error_response'      => __( 'Sorry, I encountered an issue processing that response.', 'shihela-contextual-site-assistant' ),
-			'error_connection'    => __( 'Sorry, I am unable to connect to the assistant right now. Please try again later.', 'shihela-contextual-site-assistant' ),
-			'max_length'          => (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ),
-			'daily_limit_reached' => $daily_limit_reached,
-			'error_daily_limit'   => __( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
-			'suggestion_chips'    => $chips_array,
+			'rest_url'             => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
+			'nonce'                => wp_create_nonce( 'wp_rest' ), // Standard WP REST API Nonce
+			'css_url'              => SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css',
+			'bot_name'             => esc_html( get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
+			'welcome_message'      => esc_html( get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant.' ) ),
+			'theme_color'          => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
+			'post_id'              => $post_id,
+			'page_title'           => esc_html( $page_title ),
+			'page_url'             => esc_url( $page_url ),
+			'reset_confirm'        => __( 'Are you sure you want to reset this conversation?', 'shihela-contextual-site-assistant' ),
+			'error_response'       => __( 'Sorry, I encountered an issue processing that response.', 'shihela-contextual-site-assistant' ),
+			'error_connection'     => __( 'Sorry, I am unable to connect to the assistant right now. Please try again later.', 'shihela-contextual-site-assistant' ),
+			'max_length'           => (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ),
+			'daily_limit_reached'  => $daily_limit_reached,
+			'error_daily_limit'    => __( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
+			'suggestion_chips'     => $chips_array,
+			'whatsapp_number'      => sanitize_text_field( get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' ) ),
+			'whatsapp_message'     => esc_html( get_option( 'shihela_contextual_site_assistant_whatsapp_message', 'Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan.' ) ),
+			'whatsapp_header_btn'  => get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' ),
+			'whatsapp_default_label' => __( 'Chat via WhatsApp', 'shihela-contextual-site-assistant' ),
 		) );
 	}
 

@@ -60,13 +60,11 @@ class Shihela_Contextual_Site_Assistant_Admin {
 		wp_enqueue_style( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'admin/css/shihela-contextual-site-assistant-admin.css', array(), $this->version, 'all' );
 	}
 
-	/**
-	 * Register the JavaScript for the admin area.
-	 *
-	 * @since    1.0.0
-	 */
-	public function enqueue_scripts() {
-		// No custom admin JS needed as credentials and connections are handled by WordPress Core.
+	public function enqueue_scripts( $hook ) {
+		if ( false === strpos( $hook, 'shihela-contextual-site-assistant' ) ) {
+			return;
+		}
+		wp_enqueue_script( $this->plugin_name . '-admin', SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'admin/js/shihela-contextual-site-assistant-admin.js', array( 'jquery' ), $this->version, true );
 	}
 
 	/**
@@ -326,6 +324,24 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'type'              => 'integer',
 			'sanitize_callback' => 'absint',
 			'default'           => 20,
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_whatsapp_number', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => '',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_whatsapp_message', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'default'           => 'Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan.',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_whatsapp_header_btn', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => '1',
 		) );
 	}
 

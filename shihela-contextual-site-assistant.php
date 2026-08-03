@@ -15,7 +15,7 @@
  * Plugin Name:       Shihela Contextual Site Assistant
  * Plugin URI:        https://yukdigitalz.com/shihela-contextual-site-assistant
  * Description:       A professional floating AI assistant that answers visitors' questions in the context of the pages they browse, powered by Gemini and OpenAI.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Author:            Shihela
  * Author URI:        https://yukdigitalz.com/
  * License:           GPL-2.0+
@@ -31,7 +31,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently active version of the plugin.
  */
-define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION', '1.1.0' );
+define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION', '1.2.0' );
 
 /**
  * Path constant for the plugin directory.

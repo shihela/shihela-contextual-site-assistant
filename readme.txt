@@ -50,14 +50,20 @@ This plugin utilizes the native WordPress AI Client to communicate with generati
 = How does the AI know the page context? =
 When a chat is initiated, the plugin retrieves the current page ID and queries WordPress for its title and content. Shortcodes, HTML tags, and script/style tags are stripped, and up to 1,000 words of pure text content are sent along with the prompt to provide accurate context.
 
+= How does the WhatsApp CS integration work? =
+When an administrator configures a WhatsApp number under Settings > WhatsApp & CS, the AI automatically detects when a visitor asks for human support or contact details, displaying a "Chat via WhatsApp" button with dynamic page title and URL pre-filled in the message.
+
 = Can I choose which AI provider to use? =
 Yes. You can manage and switch your AI providers globally inside WordPress under **Settings > Connectors**. This plugin automatically uses whichever model and credits are set as default by the administrator.
 
 == Screenshots ==
 
-1. screenshot-1.png - The floating Shihela Contextual Site Assistant chatbot interface on the front-end.
-2. screenshot-2.png - Main settings panel in the WordPress dashboard for assistant configuration.
-3. screenshot-3.png - Lead management system showing captured contact data and metrics.
+1. scsa-1.png - Main settings panel in the WordPress dashboard for assistant configuration. 
+2. scsa-2.png - WhatsApp and CS settings panel in the WordPress dashboard.
+3. scsa-3.png - AI Instructions and settings in the WordPress dashboard.
+4. scsa-4.png - Lead and Webhook settings in the WordPress dashboard.
+5. scsa-5.png - Security and Quotas settings in the WordPress dashboard.
+6. scsa-6.png - Captured customer leads management panel in the WordPress dashboard.
 
 == Changelog ==
 

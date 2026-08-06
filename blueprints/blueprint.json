@@ -1,0 +1,93 @@
+{
+  "$schema": "https://wordpress.net",
+  "landingPage": "/wp-admin/admin.php?page=shihela-contextual-site-assistant",
+  "preferredVersions": {
+    "php": "8.1",
+    "wp": "latest"
+  },
+  "steps": [
+    {
+      "step": "login"
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "shihela-contextual-site-assistant"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_bot_name",
+        "Shihela AI"
+      ]
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_welcome_message",
+        "Hello! I am your AI assistant. How can I help you today?"
+      ]
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_theme_color",
+        "#452bc5"
+      ]
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_widget_position",
+        "bottom-right"
+      ]
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_suggestion_chips",
+        "How can you help me?\nWhat services are offered?\nHow to contact human support?"
+      ]
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_whatsapp_message",
+        "Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan."
+      ]
+    },
+    {
+      "step": "wp-cli",
+      "command": [
+        "wp",
+        "option",
+        "update",
+        "shihela_contextual_site_assistant_whatsapp_header_btn",
+        "1"
+      ]
+    }
+  ]
+}

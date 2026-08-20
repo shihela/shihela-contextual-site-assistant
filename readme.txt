@@ -3,7 +3,7 @@ Contributors: shihela
 Tags: ai-client, customer-support, lead-generation, ai-assistant, wordpress-ai
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://gnu.org
@@ -66,6 +66,12 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 6. scsa-6.png - Captured customer leads management panel in the WordPress dashboard.
 
 == Changelog ==
+
+= 1.3.0 =
+* Reduced default AI temperature to 0.3 for strict contextual grounding and anti-hallucination.
+* Enhanced System Prompt with XML <current_page_context> tags and strict grounding rules.
+* Added AI Model Temperature setting control in WordPress Admin Settings (Tab 3).
+* Implemented automatic fallback to WhatsApp CS button / Lead Capture when requested information is missing from the current page context.
 
 = 1.2.0 =
 * Added WhatsApp Admin/CS Integration: Support for Admin WhatsApp phone number, custom pre-filled message with page context, and in-chat Click to WA CTA button.

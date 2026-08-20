@@ -272,6 +272,12 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'default'           => '',
 		) );
 
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_temperature', array(
+			'type'              => 'number',
+			'sanitize_callback' => array( $this, 'sanitize_temperature' ),
+			'default'           => 0.3,
+		) );
+
 		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_suggestion_chips', array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
@@ -343,6 +349,24 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '1',
 		) );
+	}
+
+	/**
+	 * Sanitize temperature input value (clamp between 0.0 and 1.0).
+	 *
+	 * @since    1.3.0
+	 * @param    mixed $value Input temperature.
+	 * @return   float Clamped float temperature value.
+	 */
+	public function sanitize_temperature( $value ) {
+		$val = floatval( $value );
+		if ( $val < 0.0 ) {
+			return 0.0;
+		}
+		if ( $val > 1.0 ) {
+			return 1.0;
+		}
+		return round( $val, 2 );
 	}
 
 	/**

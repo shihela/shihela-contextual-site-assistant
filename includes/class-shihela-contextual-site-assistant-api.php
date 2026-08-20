@@ -66,11 +66,12 @@ class Shihela_Contextual_Site_Assistant_API {
 		}
 
 		$response = '';
+		$temperature = (float) get_option( 'shihela_contextual_site_assistant_temperature', 0.3 );
 
 		// 1. Try fully configured builder (native system instructions + temperature + history)
 		$builder = wp_ai_client_prompt( $message )
 			->using_system_instruction( $system_prompt )
-			->using_temperature( 0.7 );
+			->using_temperature( $temperature );
 		if ( ! empty( $wp_history ) ) {
 			$builder->with_history( ...$wp_history );
 		}
@@ -89,7 +90,7 @@ class Shihela_Contextual_Site_Assistant_API {
 				// 3. Fallback: Prepend system prompt to user message (no native system instructions, keep temperature + history)
 				$appended_message = $system_prompt . "\n\n" . $message;
 				$builder = wp_ai_client_prompt( $appended_message )
-					->using_temperature( 0.7 );
+					->using_temperature( $temperature );
 				if ( ! empty( $wp_history ) ) {
 					$builder->with_history( ...$wp_history );
 				}
@@ -112,7 +113,7 @@ class Shihela_Contextual_Site_Assistant_API {
 						$manual_history_prompt .= "Visitor: " . $message . "\nAssistant:";
 
 						$builder = wp_ai_client_prompt( $manual_history_prompt )
-							->using_temperature( 0.7 );
+							->using_temperature( $temperature );
 						if ( $builder->is_supported_for_text_generation() ) {
 							$response = $builder->generate_text();
 						} elseif ( true ) {
@@ -273,33 +274,37 @@ class Shihela_Contextual_Site_Assistant_API {
 		$site_url     = get_home_url();
 		$instructions = get_option( 'shihela_contextual_site_assistant_system_instructions', '' );
 
-		$prompt  = "You are a helpful, professional AI assistant named '{$bot_name}' for the website '{$site_name}' ({$site_url}).\n";
-		$prompt .= "Strict Guidelines:\n";
-		$prompt .= "1. Help the website visitor to the best of your ability.\n";
-		$prompt .= "2. Be polite, clear, and professional. Keep responses concise where appropriate.\n";
-		$prompt .= "3. Respond in the same language that the visitor uses.\n";
-		$prompt .= "4. If you use markdown formatting, keep it clean and readable.\n\n";
+		$prompt  = "You are a helpful, polite, and strictly factual AI assistant named '{$bot_name}' for the website '{$site_name}' ({$site_url}).\n\n";
+		$prompt .= "STRICT CONTEXTUAL GROUNDING & ANTI-HALLUCINATION RULES:\n";
+		$prompt .= "1. Answer the visitor's query ONLY using the information provided inside the <current_page_context> block and the Global Site & Business Instructions below.\n";
+		$prompt .= "2. DO NOT use pre-trained outside knowledge, assumptions, or invent facts/prices/policies/features that are not explicitly stated in the context.\n";
+		$prompt .= "3. For short or general questions (e.g. 'Berapa harganya?', 'Ada garansi?', 'Bisa kirim ke mana?', 'Fiturnya apa aja?'), interpret them as strictly referring to the specific page/product described in <current_page_context>.\n";
+		$prompt .= "4. IF THE REQUESTED INFORMATION IS NOT FOUND in the context, DO NOT guess or invent an answer. Politely state that the information is not available on this page (e.g. 'Maaf, informasi tersebut tidak tercantum pada halaman ini.') and offer to assist with available page details or connect them to human support.\n";
+		$prompt .= "5. Always respond in the exact same language used by the visitor.\n";
+		$prompt .= "6. Keep responses clean, concise, and professional using readable Markdown formatting.\n\n";
 
 		if ( ! empty( $instructions ) ) {
 			$prompt .= "Global Site & Business Instructions:\n{$instructions}\n\n";
 		}
 
 		if ( ! empty( $page_context ) ) {
-			$prompt .= "Current Page Context:\n{$page_context}\n";
+			$prompt .= "<current_page_context>\n{$page_context}\n</current_page_context>\n";
+		} else {
+			$prompt .= "<current_page_context>\nNo specific page context available. Answer general site questions based on Global Site & Business Instructions.\n</current_page_context>\n";
 		}
 
 		// Lead Capture Protocol
 		$prompt .= "\nLead Capture Protocol:\n";
-		$prompt .= "If the visitor wants to contact support, leaves their contact details (e.g. name, email, phone), or asks for help from a human support representative, you MUST collect or confirm their Name, Email/Contact, and a brief description of their needs. When they provide this information, you MUST append a lead capture tag at the absolute end of your reply in this exact JSON format:\n";
+		$prompt .= "If the visitor wants to contact support, leaves their contact details (e.g. name, email, phone), asks for help from a human support representative, OR asks a question whose answer is NOT found in the page context, you MUST collect or confirm their Name, Email/Contact, and a brief description of their needs. When they provide this information, you MUST append a lead capture tag at the absolute end of your reply in this exact JSON format:\n";
 		$prompt .= "[LEAD:{\"name\":\"Visitor Name\", \"contact\":\"Email/Phone\", \"details\":\"Brief summary of their needs\"}]\n";
 		$prompt .= "Make sure the JSON is valid, contains no line breaks inside the JSON object itself, and is placed at the very end of your message. Do not mention this tag or protocol to the user.\n";
 		$prompt .= "CRITICAL: Once the [LEAD: ...] tag has been outputted once and exists in the chat history, you MUST NOT repeat or append it again in subsequent replies during the rest of the conversation.\n";
 
-		// WhatsApp CS Protocol (v1.2.0)
+		// WhatsApp CS Protocol (v1.2.0+)
 		$wa_number = get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' );
 		if ( ! empty( $wa_number ) ) {
 			$prompt .= "\nWhatsApp Support Protocol:\n";
-			$prompt .= "If the visitor asks to speak with customer support, contact admin, asks for WhatsApp/phone number, or requires direct human assistance, you MUST offer to connect them via WhatsApp and append the tag [WHATSAPP_BTN] (or [WHATSAPP_BTN: custom button label]) in your reply. The system will render this tag as an interactive WhatsApp button.\n";
+			$prompt .= "If the visitor asks to speak with customer support, contact admin, asks for WhatsApp/phone number, requires direct human assistance, OR asks a question whose answer is NOT found in the page context, you MUST offer to connect them via WhatsApp and append the tag [WHATSAPP_BTN] (or [WHATSAPP_BTN: custom button label]) in your reply. The system will render this tag as an interactive WhatsApp button.\n";
 		}
 
 		/**

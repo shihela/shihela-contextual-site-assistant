@@ -18,6 +18,7 @@ if ( ! defined( 'WPINC' ) ) {
 $shihela_contextual_site_assistant_bot_name            = get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' );
 $shihela_contextual_site_assistant_welcome_message     = get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant. How can I help you today?' );
 $shihela_contextual_site_assistant_system_instructions = get_option( 'shihela_contextual_site_assistant_system_instructions', '' );
+$shihela_contextual_site_assistant_temperature         = get_option( 'shihela_contextual_site_assistant_temperature', 0.3 );
 $shihela_contextual_site_assistant_suggestion_chips    = get_option( 'shihela_contextual_site_assistant_suggestion_chips', "How can you help me?\nWhat services are offered?\nHow to contact human support?" );
 $shihela_contextual_site_assistant_theme_color         = get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' );
 $shihela_contextual_site_assistant_widget_position     = get_option( 'shihela_contextual_site_assistant_widget_position', 'bottom-right' );
@@ -44,7 +45,7 @@ $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_co
 				<span class="dashicons dashicons-admin-comments"></span>
 			</div>
 			<div>
-				<h1><?php esc_html_e( 'Shihela Site Assistant', 'shihela-contextual-site-assistant' ); ?> <span class="shihela-version-pill">v1.2.0</span></h1>
+				<h1><?php esc_html_e( 'Shihela Site Assistant', 'shihela-contextual-site-assistant' ); ?> <span class="shihela-version-pill">v1.3.0</span></h1>
 				<p class="shihela-contextual-site-assistant-tagline"><?php esc_html_e( 'Configure floating context-aware AI chat, WhatsApp CS routing, and security quotas.', 'shihela-contextual-site-assistant' ); ?></p>
 			</div>
 		</div>
@@ -211,6 +212,14 @@ $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_co
 								<label for="shihela_contextual_site_assistant_system_instructions"><?php esc_html_e( 'Global Business Instructions & Prompt Rules', 'shihela-contextual-site-assistant' ); ?></label>
 								<textarea name="shihela_contextual_site_assistant_system_instructions" id="shihela_contextual_site_assistant_system_instructions" rows="7" class="large-text shihela-contextual-site-assistant-textarea" placeholder="<?php esc_attr_e( 'e.g. You are an assistant for an online clothing store. Business hours are 09:00 - 18:00. Always recommend products politely...', 'shihela-contextual-site-assistant' ); ?>"><?php echo esc_textarea( $shihela_contextual_site_assistant_system_instructions ); ?></textarea>
 								<p class="description"><?php esc_html_e( 'Specific guidelines and domain knowledge the AI must adhere to for all visitor questions.', 'shihela-contextual-site-assistant' ); ?></p>
+							</div>
+
+							<div class="shihela-contextual-site-assistant-form-group">
+								<label for="shihela_contextual_site_assistant_temperature"><?php esc_html_e( 'AI Creativity Temperature (0.0 - 1.0)', 'shihela-contextual-site-assistant' ); ?></label>
+								<input type="number" name="shihela_contextual_site_assistant_temperature" id="shihela_contextual_site_assistant_temperature" value="<?php echo esc_attr( $shihela_contextual_site_assistant_temperature ); ?>" step="0.05" min="0.0" max="1.0" class="small-text shihela-contextual-site-assistant-input">
+								<p class="description">
+									<?php esc_html_e( 'Recommended: 0.3 for strict contextual grounding & anti-hallucination (0.0 = completely deterministic/strict, 0.7 = creative/loose).', 'shihela-contextual-site-assistant' ); ?>
+								</p>
 							</div>
 
 							<div class="shihela-feature-highlight">

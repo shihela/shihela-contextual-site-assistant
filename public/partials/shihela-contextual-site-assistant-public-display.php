@@ -20,7 +20,7 @@ $shihela_contextual_site_assistant_theme_color     = get_option( 'shihela_contex
 $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contextual_site_assistant_widget_position', 'bottom-right' );
 ?>
 
-<div id="shihela-contextual-site-assistant-widget-root" class="shihela-contextual-site-assistant-widget-root shihela-position-<?php echo esc_attr( $shihela_contextual_site_assistant_widget_position ); ?>" style="--shihela-accent: <?php echo esc_attr( $shihela_contextual_site_assistant_theme_color ); ?>;">
+<div id="shihela-contextual-site-assistant-widget-root" class="shihela-contextual-site-assistant-widget-root shihela-position-<?php echo esc_attr( $shihela_contextual_site_assistant_widget_position ); ?>" style="--shihela-accent: <?php echo esc_attr( $shihela_contextual_site_assistant_theme_color ); ?>;" hidden>
 	<!-- Floating Launcher Button -->
 	<button id="shihela-contextual-site-assistant-launcher" class="shihela-contextual-site-assistant-launcher" aria-label="<?php esc_attr_e( 'Open Chat Assistant', 'shihela-contextual-site-assistant' ); ?>">
 		<svg class="shihela-contextual-site-assistant-icon-chat" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -42,7 +42,7 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 					<span class="shihela-contextual-site-assistant-online-indicator"></span>
 				</div>
 				<div class="shihela-contextual-site-assistant-bot-details">
-					<h3 class="shihela-contextual-site-assistant-bot-title"><?php echo esc_html( $shihela_contextual_site_assistant_bot_name ); ?></h3>
+					<span class="shihela-contextual-site-assistant-bot-title" role="heading" aria-level="2"><?php echo esc_html( $shihela_contextual_site_assistant_bot_name ); ?></span>
 					<p class="shihela-contextual-site-assistant-bot-subtitle"><?php esc_html_e( 'Assistant Support', 'shihela-contextual-site-assistant' ); ?></p>
 				</div>
 			</div>
@@ -77,7 +77,7 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 				<div class="shihela-contextual-site-assistant-message-bubble">
 					<?php echo esc_html( $shihela_contextual_site_assistant_welcome_message ); ?>
 				</div>
-				<span class="shihela-contextual-site-assistant-message-time"><?php echo esc_html( date_i18n( get_option( 'time_format' ) ) ); ?></span>
+				<span class="shihela-contextual-site-assistant-message-time"></span>
 			</div>
 		</div>
 

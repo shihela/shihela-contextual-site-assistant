@@ -14,11 +14,14 @@
  * @wordpress-plugin
  * Plugin Name:       Shihela Contextual Site Assistant
  * Plugin URI:        https://yukdigitalz.com/shihela-contextual-site-assistant
- * Description:       A professional floating AI assistant that answers visitors' questions in the context of the pages they browse, powered by Gemini and OpenAI.
- * Version:           1.3.0
+ * Description:       A floating AI assistant that answers visitors' questions using current page context, powered by the native WordPress AI Client.
+ * Version:           1.4.0
+ * Requires at least: 7.0
+ * Requires PHP:      7.4
  * Author:            Shihela
  * Author URI:        https://yukdigitalz.com/
  * License:           GPL-2.0+
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       shihela-contextual-site-assistant
  * Domain Path:       /languages
  */
@@ -31,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently active version of the plugin.
  */
-define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION', '1.3.0' );
+define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION', '1.4.0' );
 
 /**
  * Path constant for the plugin directory.
@@ -45,10 +48,12 @@ define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL', plugin_dir_url( __FILE__ ) );
 
 /**
  * The code that runs during plugin activation.
+ *
+ * @param bool $network_wide Whether the plugin is being network-activated on Multisite.
  */
-function shihela_contextual_site_assistant_activate() {
+function shihela_contextual_site_assistant_activate( $network_wide = false ) {
 	require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-activator.php';
-	Shihela_Contextual_Site_Assistant_Activator::activate();
+	Shihela_Contextual_Site_Assistant_Activator::activate( (bool) $network_wide );
 }
 
 /**

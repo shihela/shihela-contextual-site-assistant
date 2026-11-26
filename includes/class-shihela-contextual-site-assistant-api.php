@@ -9,6 +9,10 @@
  * @subpackage Shihela_Contextual_Site_Assistant/includes
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use WordPress\AiClient\Messages\DTO\UserMessage;
 use WordPress\AiClient\Messages\DTO\ModelMessage;
 use WordPress\AiClient\Messages\DTO\MessagePart;
@@ -50,12 +54,17 @@ class Shihela_Contextual_Site_Assistant_API {
 		$page_context = $this->get_page_context( $post_id );
 		$system_prompt = $this->build_system_prompt( $page_context );
 
-		// Translate history array to WP AI Client DTOs
-		$wp_history = array();
-		if ( is_array( $chat_history ) ) {
+		// Translate history array to WP AI Client DTOs (guarded for class availability)
+		$wp_history      = array();
+		$has_history_dto = class_exists( UserMessage::class ) && class_exists( ModelMessage::class ) && class_exists( MessagePart::class );
+		if ( $has_history_dto && is_array( $chat_history ) ) {
 			foreach ( $chat_history as $msg ) {
-				$role = isset( $msg['role'] ) ? $msg['role'] : 'user';
+				$role    = isset( $msg['role'] ) ? $msg['role'] : 'user';
 				$content = isset( $msg['content'] ) ? $msg['content'] : '';
+
+				if ( '' === $content ) {
+					continue;
+				}
 
 				if ( 'user' === $role ) {
 					$wp_history[] = new UserMessage( array( new MessagePart( $content ) ) );
@@ -65,72 +74,19 @@ class Shihela_Contextual_Site_Assistant_API {
 			}
 		}
 
-		$response = '';
 		$temperature = (float) get_option( 'shihela_contextual_site_assistant_temperature', 0.3 );
-
-		// 1. Try fully configured builder (native system instructions + temperature + history)
-		$builder = wp_ai_client_prompt( $message )
-			->using_system_instruction( $system_prompt )
-			->using_temperature( $temperature );
-		if ( ! empty( $wp_history ) ) {
-			$builder->with_history( ...$wp_history );
-		}
-		if ( $builder->is_supported_for_text_generation() ) {
-			$response = $builder->generate_text();
-		} elseif ( true ) {
-			// 2. Fallback: Try without temperature (system instructions + history)
-			$builder = wp_ai_client_prompt( $message )
-				->using_system_instruction( $system_prompt );
-			if ( ! empty( $wp_history ) ) {
-				$builder->with_history( ...$wp_history );
-			}
-			if ( $builder->is_supported_for_text_generation() ) {
-				$response = $builder->generate_text();
-			} elseif ( true ) {
-				// 3. Fallback: Prepend system prompt to user message (no native system instructions, keep temperature + history)
-				$appended_message = $system_prompt . "\n\n" . $message;
-				$builder = wp_ai_client_prompt( $appended_message )
-					->using_temperature( $temperature );
-				if ( ! empty( $wp_history ) ) {
-					$builder->with_history( ...$wp_history );
-				}
-				if ( $builder->is_supported_for_text_generation() ) {
-					$response = $builder->generate_text();
-				} elseif ( true ) {
-					// 4. Fallback: Prepend system prompt, no temperature, keep history
-					$builder = wp_ai_client_prompt( $appended_message );
-					if ( ! empty( $wp_history ) ) {
-						$builder->with_history( ...$wp_history );
-					}
-					if ( $builder->is_supported_for_text_generation() ) {
-						$response = $builder->generate_text();
-					} elseif ( true ) {
-						// 5. Fallback: Format history manually inside prompt text (no native history, keep temperature)
-						$manual_history_prompt = $system_prompt . "\n\n";
-						if ( ! empty( $chat_history ) ) {
-							$manual_history_prompt .= "Conversation History:\n" . $this->format_history_as_text( $chat_history ) . "\n";
-						}
-						$manual_history_prompt .= "Visitor: " . $message . "\nAssistant:";
-
-						$builder = wp_ai_client_prompt( $manual_history_prompt )
-							->using_temperature( $temperature );
-						if ( $builder->is_supported_for_text_generation() ) {
-							$response = $builder->generate_text();
-						} elseif ( true ) {
-							// 6. Fallback: Most basic prompt
-							$builder = wp_ai_client_prompt( $manual_history_prompt );
-							if ( $builder->is_supported_for_text_generation() ) {
-								$response = $builder->generate_text();
-							} else {
-								$response = $base_builder->generate_text();
-							}
-						}
-					}
-				}
-			}
-		}
+		$response    = $this->execute_with_fallback( $message, $system_prompt, $wp_history, $chat_history, $temperature, $base_builder );
 
 		if ( is_wp_error( $response ) ) {
+			/**
+			 * Action hook fired when AI text generation fails.
+			 *
+			 * @since 1.4.0
+			 * @param WP_Error $response Error object from WP AI Client.
+			 * @param string   $message  User query message.
+			 * @param int      $post_id  Current page/post ID.
+			 */
+			do_action( 'shihela_assistant_ai_error', $response, $message, $post_id );
 			return $response;
 		}
 
@@ -143,6 +99,92 @@ class Shihela_Contextual_Site_Assistant_API {
 		 * @param int    $post_id  The current page/post ID.
 		 */
 		return apply_filters( 'shihela_assistant_chat_response', $response, $message, $post_id );
+	}
+
+	/**
+	 * Execute prompt generation with graceful capability negotiation across LLM providers.
+	 *
+	 * @since    1.4.0
+	 * @param    string $message       User query message.
+	 * @param    string $system_prompt Compiled system prompt.
+	 * @param    array  $wp_history    Array of WP AI Client message DTOs.
+	 * @param    array  $chat_history  Raw sanitized chat history array.
+	 * @param    float  $temperature   Model temperature.
+	 * @param    object $base_builder  Pre-checked base prompt builder.
+	 * @return   string|WP_Error       AI response text or WP_Error.
+	 */
+	private function execute_with_fallback( $message, $system_prompt, $wp_history, $chat_history, $temperature, $base_builder ) {
+		$appended_message      = $system_prompt . "\n\n" . $message;
+		$manual_history_prompt = $system_prompt . "\n\n";
+		if ( ! empty( $chat_history ) ) {
+			$manual_history_prompt .= "Conversation History:\n" . $this->format_history_as_text( $chat_history ) . "\n";
+		}
+		$manual_history_prompt .= 'Visitor: ' . $message . "\nAssistant:";
+
+		$strategies = array(
+			// 1. Full native capabilities: system instruction + temperature + DTO history.
+			array(
+				'prompt'      => $message,
+				'system'      => true,
+				'temperature' => true,
+				'history'     => true,
+			),
+			// 2. Native system instruction + DTO history (without temperature).
+			array(
+				'prompt'      => $message,
+				'system'      => true,
+				'temperature' => false,
+				'history'     => true,
+			),
+			// 3. Inline system prompt + temperature + DTO history.
+			array(
+				'prompt'      => $appended_message,
+				'system'      => false,
+				'temperature' => true,
+				'history'     => true,
+			),
+			// 4. Inline system prompt + DTO history (without temperature).
+			array(
+				'prompt'      => $appended_message,
+				'system'      => false,
+				'temperature' => false,
+				'history'     => true,
+			),
+			// 5. Manual history prompt + temperature.
+			array(
+				'prompt'      => $manual_history_prompt,
+				'system'      => false,
+				'temperature' => true,
+				'history'     => false,
+			),
+			// 6. Basic manual history prompt.
+			array(
+				'prompt'      => $manual_history_prompt,
+				'system'      => false,
+				'temperature' => false,
+				'history'     => false,
+			),
+		);
+
+		foreach ( $strategies as $strategy ) {
+			$builder = wp_ai_client_prompt( $strategy['prompt'] );
+
+			if ( $strategy['system'] ) {
+				$builder = $builder->using_system_instruction( $system_prompt );
+			}
+			if ( $strategy['temperature'] ) {
+				$builder = $builder->using_temperature( $temperature );
+			}
+			if ( $strategy['history'] && ! empty( $wp_history ) ) {
+				$builder->with_history( ...$wp_history );
+			}
+
+			if ( $builder->is_supported_for_text_generation() ) {
+				return $builder->generate_text();
+			}
+		}
+
+		return $base_builder->generate_text();
 	}
 
 	/**
@@ -177,13 +219,13 @@ class Shihela_Contextual_Site_Assistant_API {
 
 		if ( $post_id ) {
 			$post = get_post( $post_id );
-			if ( $post ) {
+			if ( $post instanceof WP_Post && $this->can_read_post_context( $post ) ) {
 				$title           = $post->post_title;
 				$permalink       = get_permalink( $post_id );
 				$excerpt         = $this->sanitize_page_text( $post->post_excerpt );
 				$raw_content     = $post->post_content;
 				
-				// Clean raw content first, THEN trim to 600 pure text words
+				// Clean raw content first, THEN trim to 1,000 pure text words
 				$clean_content   = $this->sanitize_page_text( $raw_content );
 				$trimmed_content = wp_trim_words( $clean_content, 1000, '...' );
 
@@ -219,6 +261,38 @@ class Shihela_Contextual_Site_Assistant_API {
 		 * @param int    $post_id Current post ID.
 		 */
 		return apply_filters( 'shihela_assistant_chat_context', $context, $post_id );
+	}
+
+	/**
+	 * Verify whether the current visitor is allowed to read a post's context.
+	 * Prevents IDOR exposure of private, draft, password-protected, or non-public CPT content.
+	 *
+	 * @since    1.4.0
+	 * @param    WP_Post $post Post object to check.
+	 * @return   bool True if safe to expose as AI context, false otherwise.
+	 */
+	private function can_read_post_context( $post ) {
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+
+		// Must be a publicly viewable post type (excludes orders, revisions, nav items, internal CPTs).
+		if ( ! is_post_type_viewable( $post->post_type ) ) {
+			return false;
+		}
+
+		// Never expose password-protected post content via REST API.
+		if ( ! empty( $post->post_password ) || post_password_required( $post ) ) {
+			return false;
+		}
+
+		$status = get_post_status( $post );
+		if ( 'publish' === $status ) {
+			return true;
+		}
+
+		// Allow non-published posts only if the authenticated user explicitly has read permission.
+		return is_user_logged_in() && current_user_can( 'read_post', $post->ID );
 	}
 
 	/**

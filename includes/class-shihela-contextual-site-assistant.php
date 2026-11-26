@@ -12,6 +12,10 @@
  * @subpackage Shihela_Contextual_Site_Assistant/includes
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * The core plugin class.
  *
@@ -59,6 +63,39 @@ class Shihela_Contextual_Site_Assistant {
 		$this->load_dependencies();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+		$this->define_privacy_hooks();
+		add_action( 'plugins_loaded', array( $this, 'maybe_upgrade_database' ) );
+		add_action( 'wp_initialize_site', array( $this, 'on_initialize_multisite_blog' ) );
+	}
+
+	/**
+	 * Initialize plugin tables and defaults when a new Multisite blog is created.
+	 *
+	 * @since    1.4.0
+	 * @param    WP_Site $new_site Newly initialized site object.
+	 */
+	public function on_initialize_multisite_blog( $new_site ) {
+		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		if ( is_plugin_active_for_network( 'shihela-contextual-site-assistant/shihela-contextual-site-assistant.php' ) ) {
+			require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-activator.php';
+			switch_to_blog( (int) $new_site->blog_id );
+			Shihela_Contextual_Site_Assistant_Activator::activate_single_site();
+			restore_current_blog();
+		}
+	}
+
+	/**
+	 * Ensure database schema migrations run after plugin updates.
+	 *
+	 * @since    1.4.0
+	 */
+	public function maybe_upgrade_database() {
+		if ( '1.1.0' !== get_option( 'shihela_contextual_site_assistant_db_version', '' ) ) {
+			require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-activator.php';
+			Shihela_Contextual_Site_Assistant_Activator::maybe_upgrade();
+		}
 	}
 
 	/**
@@ -70,6 +107,21 @@ class Shihela_Contextual_Site_Assistant {
 	private function load_dependencies() {
 		require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-admin.php';
 		require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-public.php';
+		require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'includes/class-shihela-contextual-site-assistant-privacy.php';
+	}
+
+	/**
+	 * Register WordPress Privacy Tools (GDPR) hooks.
+	 *
+	 * @since    1.4.0
+	 * @access   private
+	 */
+	private function define_privacy_hooks() {
+		$plugin_privacy = new Shihela_Contextual_Site_Assistant_Privacy();
+
+		add_action( 'admin_init', array( $plugin_privacy, 'add_privacy_policy_content' ) );
+		add_filter( 'wp_privacy_personal_data_exporters', array( $plugin_privacy, 'register_exporter' ) );
+		add_filter( 'wp_privacy_personal_data_erasers', array( $plugin_privacy, 'register_eraser' ) );
 	}
 
 	/**

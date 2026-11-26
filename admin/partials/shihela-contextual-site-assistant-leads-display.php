@@ -110,36 +110,36 @@ $shihela_contextual_site_assistant_export_url = wp_nonce_url(
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if ( isset( $_GET['deleted'] ) && '1' === $_GET['deleted'] ) :
 	?>
-		<div class="notice notice-success is-dismissible" style="margin-bottom: 20px;">
+		<div class="notice notice-success is-dismissible shihela-leads-notice">
 			<p><?php esc_html_e( 'Lead deleted successfully.', 'shihela-contextual-site-assistant' ); ?></p>
 		</div>
 	<?php endif; ?>
 
 	<!-- Filter Card -->
-	<div class="shihela-contextual-site-assistant-card" style="margin-bottom: 24px;">
-		<div class="shihela-contextual-site-assistant-card-body" style="padding: 20px 24px;">
-			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin: 0;">
+	<div class="shihela-contextual-site-assistant-card shihela-leads-filter-card">
+		<div class="shihela-contextual-site-assistant-card-body shihela-leads-filter-body">
+			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="shihela-leads-filter-form">
 				<input type="hidden" name="page" value="shihela-contextual-site-assistant-leads">
 
-				<div class="shihela-contextual-site-assistant-filter-field" style="display: flex; flex-direction: column; gap: 6px; min-width: 240px; flex: 1;">
-					<label for="shihela_contextual_site_assistant_search_input" style="font-weight: 600; font-size: 13.5px; color: #1e293b;"><?php esc_html_e( 'Search Keywords', 'shihela-contextual-site-assistant' ); ?></label>
+				<div class="shihela-contextual-site-assistant-filter-field shihela-filter-grow">
+					<label for="shihela_contextual_site_assistant_search_input"><?php esc_html_e( 'Search Keywords', 'shihela-contextual-site-assistant' ); ?></label>
 					<input type="text" name="s" id="shihela_contextual_site_assistant_search_input" value="<?php echo esc_attr( $shihela_contextual_site_assistant_search ); ?>" placeholder="<?php esc_attr_e( 'Search Name, Email, Inquiry...', 'shihela-contextual-site-assistant' ); ?>" class="shihela-contextual-site-assistant-input">
 				</div>
 
-				<div class="shihela-contextual-site-assistant-filter-field" style="display: flex; flex-direction: column; gap: 6px; width: 160px;">
-					<label for="shihela_contextual_site_assistant_start_date" style="font-weight: 600; font-size: 13.5px; color: #1e293b;"><?php esc_html_e( 'Start Date', 'shihela-contextual-site-assistant' ); ?></label>
+				<div class="shihela-contextual-site-assistant-filter-field shihela-filter-date">
+					<label for="shihela_contextual_site_assistant_start_date"><?php esc_html_e( 'Start Date', 'shihela-contextual-site-assistant' ); ?></label>
 					<input type="date" name="start_date" id="shihela_contextual_site_assistant_start_date" value="<?php echo esc_attr( $shihela_contextual_site_assistant_start_date ); ?>" class="shihela-contextual-site-assistant-input">
 				</div>
 
-				<div class="shihela-contextual-site-assistant-filter-field" style="display: flex; flex-direction: column; gap: 6px; width: 160px;">
-					<label for="shihela_contextual_site_assistant_end_date" style="font-weight: 600; font-size: 13.5px; color: #1e293b;"><?php esc_html_e( 'End Date', 'shihela-contextual-site-assistant' ); ?></label>
+				<div class="shihela-contextual-site-assistant-filter-field shihela-filter-date">
+					<label for="shihela_contextual_site_assistant_end_date"><?php esc_html_e( 'End Date', 'shihela-contextual-site-assistant' ); ?></label>
 					<input type="date" name="end_date" id="shihela_contextual_site_assistant_end_date" value="<?php echo esc_attr( $shihela_contextual_site_assistant_end_date ); ?>" class="shihela-contextual-site-assistant-input">
 				</div>
 
-				<div class="shihela-contextual-site-assistant-filter-actions" style="display: flex; gap: 10px; align-items: center;">
-					<button type="submit" class="button button-primary" style="height: 38px; padding: 0 20px; font-weight: 600; font-size: 13.5px; border-radius: 8px; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); border: none;"><?php esc_html_e( 'Apply Filters', 'shihela-contextual-site-assistant' ); ?></button>
+				<div class="shihela-contextual-site-assistant-filter-actions">
+					<button type="submit" class="button button-primary shihela-filter-submit-btn"><?php esc_html_e( 'Apply Filters', 'shihela-contextual-site-assistant' ); ?></button>
 					<?php if ( ! empty( $shihela_contextual_site_assistant_search ) || ! empty( $shihela_contextual_site_assistant_start_date ) || ! empty( $shihela_contextual_site_assistant_end_date ) ) : ?>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=shihela-contextual-site-assistant-leads' ) ); ?>" class="button button-secondary" style="height: 38px; line-height: 36px; padding: 0 16px; font-size: 13.5px; border-radius: 8px;"><?php esc_html_e( 'Clear', 'shihela-contextual-site-assistant' ); ?></a>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=shihela-contextual-site-assistant-leads' ) ); ?>" class="button button-secondary shihela-filter-clear-btn"><?php esc_html_e( 'Clear', 'shihela-contextual-site-assistant' ); ?></a>
 					<?php endif; ?>
 				</div>
 			</form>
@@ -148,8 +148,8 @@ $shihela_contextual_site_assistant_export_url = wp_nonce_url(
 
 	<!-- Leads Table Card -->
 	<div class="shihela-contextual-site-assistant-card">
-		<div class="shihela-card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;">
-			<h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+		<div class="shihela-card-header shihela-leads-table-header">
+			<h2>
 				<span class="dashicons dashicons-list-view"></span>
 				<?php
 				/* translators: %d: count of captured leads */
@@ -157,65 +157,78 @@ $shihela_contextual_site_assistant_export_url = wp_nonce_url(
 				?>
 			</h2>
 			<?php if ( ! empty( $shihela_contextual_site_assistant_leads ) ) : ?>
-				<a href="<?php echo esc_url( $shihela_contextual_site_assistant_export_url ); ?>" class="button button-secondary shihela-leads-btn" style="font-size: 13px; font-weight: 600;">
+				<a href="<?php echo esc_url( $shihela_contextual_site_assistant_export_url ); ?>" class="button button-secondary shihela-leads-btn shihela-export-csv-btn">
 					<span class="dashicons dashicons-download"></span>
 					<?php esc_html_e( 'Export CSV', 'shihela-contextual-site-assistant' ); ?>
 				</a>
 			<?php endif; ?>
 		</div>
-		<div class="shihela-contextual-site-assistant-card-body" style="padding: 0;">
+		<div class="shihela-contextual-site-assistant-card-body shihela-leads-table-body">
 			<?php if ( empty( $shihela_contextual_site_assistant_leads ) ) : ?>
-				<div style="padding: 40px 24px; text-align: center; color: #64748b;">
-					<span class="dashicons dashicons-info" style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 10px; color: #cbd5e1;"></span>
-					<p style="font-size: 15px; margin: 0;"><?php esc_html_e( 'No leads found. The chatbot will capture leads when visitors submit their contact details.', 'shihela-contextual-site-assistant' ); ?></p>
+				<div class="shihela-leads-empty">
+					<span class="dashicons dashicons-info"></span>
+					<p><?php esc_html_e( 'No leads found. The chatbot will capture leads when visitors submit their contact details.', 'shihela-contextual-site-assistant' ); ?></p>
 				</div>
 			<?php else : ?>
-				<table class="wp-list-table widefat fixed striped posts shihela-contextual-site-assistant-leads-table" style="border: none; box-shadow: none;">
+				<table class="wp-list-table widefat fixed striped posts shihela-contextual-site-assistant-leads-table">
 					<thead>
 						<tr>
-							<th scope="col" class="manage-column column-date" style="width: 16%; padding-left: 24px; font-weight: 600;"><?php esc_html_e( 'Date & Time', 'shihela-contextual-site-assistant' ); ?></th>
-							<th scope="col" class="manage-column column-title" style="width: 18%; font-weight: 600;"><?php esc_html_e( 'Name', 'shihela-contextual-site-assistant' ); ?></th>
-							<th scope="col" class="manage-column column-categories" style="width: 20%; font-weight: 600;"><?php esc_html_e( 'Contact Info', 'shihela-contextual-site-assistant' ); ?></th>
-							<th scope="col" class="manage-column column-description" style="width: 30%; font-weight: 600;"><?php esc_html_e( 'Inquiry Details', 'shihela-contextual-site-assistant' ); ?></th>
-							<th scope="col" class="manage-column column-tags" style="width: 16%; font-weight: 600;"><?php esc_html_e( 'Page Origin', 'shihela-contextual-site-assistant' ); ?></th>
-							<th scope="col" class="manage-column column-action" style="width: 70px; text-align: center; padding-right: 24px; font-weight: 600;"><?php esc_html_e( 'Action', 'shihela-contextual-site-assistant' ); ?></th>
+							<th scope="col" class="manage-column column-date shihela-col-date"><?php esc_html_e( 'Date & Time', 'shihela-contextual-site-assistant' ); ?></th>
+							<th scope="col" class="manage-column column-title shihela-col-name"><?php esc_html_e( 'Name', 'shihela-contextual-site-assistant' ); ?></th>
+							<th scope="col" class="manage-column column-categories shihela-col-contact"><?php esc_html_e( 'Contact Info', 'shihela-contextual-site-assistant' ); ?></th>
+							<th scope="col" class="manage-column column-description shihela-col-details"><?php esc_html_e( 'Inquiry Details', 'shihela-contextual-site-assistant' ); ?></th>
+							<th scope="col" class="manage-column column-tags shihela-col-origin"><?php esc_html_e( 'Page Origin', 'shihela-contextual-site-assistant' ); ?></th>
+							<th scope="col" class="manage-column column-action shihela-col-action"><?php esc_html_e( 'Action', 'shihela-contextual-site-assistant' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $shihela_contextual_site_assistant_leads as $shihela_contextual_site_assistant_lead ) : ?>
+						<?php
+						$shihela_dt_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+						$shihela_wp_tz     = wp_timezone();
+						foreach ( $shihela_contextual_site_assistant_leads as $shihela_contextual_site_assistant_lead ) :
+							$shihela_lead_dt   = DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $shihela_contextual_site_assistant_lead->lead_date, $shihela_wp_tz );
+							$shihela_lead_date = $shihela_lead_dt
+								? wp_date( $shihela_dt_format, $shihela_lead_dt->getTimestamp(), $shihela_wp_tz )
+								: $shihela_contextual_site_assistant_lead->lead_date;
+						?>
 							<tr>
-								<td style="padding-left: 24px; vertical-align: middle;">
-									<strong><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $shihela_contextual_site_assistant_lead->lead_date ) ) ); ?></strong>
+								<td class="shihela-cell-date">
+									<strong><?php echo esc_html( $shihela_lead_date ); ?></strong>
 								</td>
-								<td style="vertical-align: middle; font-weight: 500; color: #1e293b;">
+								<td class="shihela-cell-name">
 									<?php echo esc_html( $shihela_contextual_site_assistant_lead->lead_name ); ?>
 								</td>
-								<td style="vertical-align: middle;">
-									<a href="<?php echo esc_attr( strpos( $shihela_contextual_site_assistant_lead->lead_email, '@' ) !== false ? 'mailto:' . $shihela_contextual_site_assistant_lead->lead_email : 'tel:' . $shihela_contextual_site_assistant_lead->lead_email ); ?>" style="text-decoration: none; font-weight: 500; color: #4f46e5;">
+								<td class="shihela-cell-contact">
+									<?php
+									$shihela_contact_href = strpos( $shihela_contextual_site_assistant_lead->lead_email, '@' ) !== false
+										? 'mailto:' . sanitize_email( $shihela_contextual_site_assistant_lead->lead_email )
+										: 'tel:' . preg_replace( '/[^0-9+\-\s()]/', '', $shihela_contextual_site_assistant_lead->lead_email );
+									?>
+									<a href="<?php echo esc_url( $shihela_contact_href, array( 'mailto', 'tel' ) ); ?>" class="shihela-contact-link">
 										<?php echo esc_html( $shihela_contextual_site_assistant_lead->lead_email ); ?>
 									</a>
 								</td>
-								<td style="vertical-align: middle; line-height: 1.5; color: #475569;">
+								<td class="shihela-cell-details">
 									<?php echo esc_html( $shihela_contextual_site_assistant_lead->lead_message ); ?>
 								</td>
-								<td style="vertical-align: middle;">
+								<td class="shihela-cell-origin">
 									<?php if ( ! empty( $shihela_contextual_site_assistant_lead->page_url ) ) : ?>
-										<a href="<?php echo esc_url( $shihela_contextual_site_assistant_lead->page_url ); ?>" target="_blank" class="button button-small" style="font-size: 11px; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-											<span class="dashicons dashicons-external" style="font-size: 12px; width: 12px; height: 12px;"></span>
+										<a href="<?php echo esc_url( $shihela_contextual_site_assistant_lead->page_url ); ?>" target="_blank" rel="noopener noreferrer" class="button button-small shihela-origin-btn">
+											<span class="dashicons dashicons-external"></span>
 											<?php esc_html_e( 'View Page', 'shihela-contextual-site-assistant' ); ?>
 										</a>
 									<?php else : ?>
-										<span class="description" style="font-style: italic;"><?php esc_html_e( 'Unknown', 'shihela-contextual-site-assistant' ); ?></span>
+										<span class="description shihela-origin-unknown"><?php esc_html_e( 'Unknown', 'shihela-contextual-site-assistant' ); ?></span>
 									<?php endif; ?>
 								</td>
-								<td style="text-align: center; vertical-align: middle; padding-right: 24px;">
+								<td class="shihela-cell-action">
 									<?php
 									$shihela_contextual_site_assistant_delete_url = wp_nonce_url(
-										admin_url( 'admin.php?page=shihela-contextual-site-assistant-leads&action=delete&id=' . $shihela_contextual_site_assistant_lead->id ),
-										'delete_lead_' . $shihela_contextual_site_assistant_lead->id
+										admin_url( 'admin.php?page=shihela-contextual-site-assistant-leads&action=delete&id=' . absint( $shihela_contextual_site_assistant_lead->id ) ),
+										'delete_lead_' . absint( $shihela_contextual_site_assistant_lead->id )
 									);
 									?>
-									<a href="<?php echo esc_url( $shihela_contextual_site_assistant_delete_url ); ?>" class="button button-link-delete" style="color: #ef4444; text-decoration: none;" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this lead?', 'shihela-contextual-site-assistant' ); ?>');" aria-label="<?php esc_attr_e( 'Delete this lead', 'shihela-contextual-site-assistant' ); ?>">
+									<a href="<?php echo esc_url( $shihela_contextual_site_assistant_delete_url ); ?>" class="button button-link-delete shihela-delete-lead-btn" aria-label="<?php esc_attr_e( 'Delete this lead', 'shihela-contextual-site-assistant' ); ?>">
 										<span class="dashicons dashicons-trash"></span>
 									</a>
 								</td>
@@ -225,7 +238,7 @@ $shihela_contextual_site_assistant_export_url = wp_nonce_url(
 				</table>
 
 				<?php if ( $shihela_contextual_site_assistant_total_pages > 1 ) : ?>
-					<div class="shihela-contextual-site-assistant-pagination" style="padding: 16px 24px; display: flex; justify-content: flex-end; border-top: 1px solid #e2e8f0; background: #ffffff; gap: 5px;">
+					<div class="shihela-contextual-site-assistant-pagination">
 						<?php
 						echo wp_kses_post( paginate_links( array(
 							'base'      => add_query_arg( 'paged', '%#%' ),

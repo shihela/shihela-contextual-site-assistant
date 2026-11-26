@@ -49,5 +49,24 @@
 			const targetTab = $(this).data('tab');
 			activateTab(targetTab);
 		});
+
+		// Live hex color preview update
+		const $colorInput = $('#shihela_contextual_site_assistant_theme_color');
+		const $colorCode  = $('.shihela-color-code');
+		if ($colorInput.length && $colorCode.length) {
+			$colorInput.on('input change', function() {
+				$colorCode.text($(this).val());
+			});
+		}
+
+		// Delete lead confirmation (replaces inline onclick handler for CSP compliance)
+		$(document).on('click', '.shihela-delete-lead-btn', function(e) {
+			const msg = (typeof shihelaContextualSiteAssistantAdmin !== 'undefined' && shihelaContextualSiteAssistantAdmin.confirm_delete_lead)
+				? shihelaContextualSiteAssistantAdmin.confirm_delete_lead
+				: 'Are you sure you want to delete this lead?';
+			if (!window.confirm(msg)) {
+				e.preventDefault();
+			}
+		});
 	});
 })(jQuery);

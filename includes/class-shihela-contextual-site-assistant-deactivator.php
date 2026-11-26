@@ -9,6 +9,10 @@
  * @subpackage Shihela_Contextual_Site_Assistant/includes
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Fired during plugin deactivation.
  *

@@ -603,3 +603,34 @@
 	height: 18px !important;
 }
 
+/* WCAG 2.1 AA Keyboard Focus Indicators */
+.shihela-contextual-site-assistant-launcher:focus-visible,
+.shihela-contextual-site-assistant-close-panel:focus-visible,
+.shihela-contextual-site-assistant-reset-chat:focus-visible,
+.shihela-contextual-site-assistant-header-wa-btn:focus-visible,
+.shihela-contextual-site-assistant-widget-root .shihela-contextual-site-assistant-chat-submit:focus-visible,
+.shihela-contextual-site-assistant-chip:focus-visible,
+.shihela-contextual-site-assistant-whatsapp-btn:focus-visible {
+	outline: 2px solid #0f172a !important;
+	outline-offset: 2px !important;
+	box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Respect User Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+	.shihela-contextual-site-assistant-launcher,
+	.shihela-contextual-site-assistant-launcher svg,
+	.shihela-contextual-site-assistant-panel,
+	.shihela-contextual-site-assistant-message,
+	.shihela-contextual-site-assistant-typing-dot,
+	.shihela-contextual-site-assistant-chip,
+	.shihela-contextual-site-assistant-whatsapp-btn,
+	.shihela-contextual-site-assistant-header-wa-btn {
+		animation: none !important;
+		transition: none !important;
+	}
+	.shihela-contextual-site-assistant-messages-body {
+		scroll-behavior: auto;
+	}
+}
+

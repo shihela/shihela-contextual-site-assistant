@@ -2,11 +2,11 @@
 Contributors: shihela
 Tags: ai-client, customer-support, lead-generation, ai-assistant, wordpress-ai
 Requires at least: 7.0
-Tested up to: 7.0
-Stable tag: 1.3.0
+Tested up to: 7.2
+Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
-License URI: https://gnu.org
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 A floating AI assistant that answers visitors' questions using current page context, powered by the native WordPress AI Client.
 
@@ -35,7 +35,13 @@ The plugin also automatically captures leads when visitors leave their contact i
 
 == Third-Party Services & Data Privacy Notice ==
 
-This plugin utilizes the native WordPress AI Client to communicate with generative AI models. Depending on your WordPress Core Connectors configuration, user queries and current page text context are transmitted via secure HTTPS API requests to the configured AI provider. No data is stored or logged on external servers managed by this plugin's author; all captured customer leads are saved locally in your WordPress database.
+This plugin integrates with the following external services depending on your site configuration:
+
+1. **WordPress Native AI Client (Configured LLM Provider):** This plugin utilizes the native WordPress AI Client (`wp_ai_client_prompt`) to communicate with generative AI models configured globally under **Settings > Connectors**. User queries, recent chat history, and current public page text context are transmitted via HTTPS to your selected AI provider. Please review the Terms of Service and Privacy Policy of the AI provider you configure in WordPress Core Connectors.
+2. **WhatsApp Click-to-Chat (`https://wa.me/`):** When an administrator configures a WhatsApp phone number, clicking the optional WhatsApp button redirects visitors to `https://wa.me/` with a pre-filled message containing the current page title and URL. No data is transmitted to WhatsApp until the visitor clicks the button. See [WhatsApp Terms of Service](https://www.whatsapp.com/legal/terms-of-service) and [WhatsApp Privacy Policy](https://www.whatsapp.com/legal/privacy-policy).
+3. **Administrator-Configured Webhooks (Optional):** If an administrator configures a Webhook Endpoint URL (e.g., Zapier, Make, n8n, or a custom CRM), captured lead details (name, contact info, inquiry summary, origin page URL, and session ID) are sent via HTTPS POST to that configured URL.
+
+No data is stored or logged on external servers managed by this plugin's author; all captured customer leads are saved locally in your WordPress database.
 
 == Installation ==
 
@@ -66,6 +72,14 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 6. scsa-6.png - Captured customer leads management panel in the WordPress dashboard.
 
 == Changelog ==
+
+= 1.4.0 =
+* Security: Fixed IDOR vulnerability in page context extraction by enforcing viewable post types, published/read permissions, and excluding password-protected posts.
+* Security: Fixed DOM XSS vulnerability in frontend Markdown and WhatsApp CTA rendering; user messages now render strictly as escaped plain text.
+* Security: Added CSV formula injection protection, SSRF mitigation (`wp_safe_remote_post()`), optional HMAC-SHA256 webhook signing (`X-Shihela-Signature` & `X-Shihela-Timestamp`), and chat history role/length validation.
+* Compatibility: Verified WordPress 7.2 compatibility (inline SVG admin menu icon, `wp_date()`, `defer` script strategy) and PHP 8.4–8.6 (`fputcsv()` explicit `$escape` parameter) plus MySQL 8+ strict mode (`DEFAULT CURRENT_TIMESTAMP` with DB indexes and automatic schema migration).
+* Performance: Rewrote frontend widget to zero-jQuery Vanilla JS, eliminated duplicate CSS loading & Shadow DOM FOUC, disabled autoload on daily counter option, and made IP daily rate limits compatible with Redis/Memcached Object Cache and full-page caching.
+* Enterprise: Added WordPress Privacy Tools (GDPR Personal Data Exporter, Eraser, & Privacy Policy Guide), Multisite network activation & new-site initialization, chunked CSV export (500 rows/batch), `uninstall.php` cleanup, and WCAG 2.1 AA `:focus-visible` & `prefers-reduced-motion` support.
 
 = 1.3.0 =
 * Reduced default AI temperature to 0.3 for strict contextual grounding and anti-hallucination.

@@ -9,6 +9,10 @@
  * @subpackage Shihela_Contextual_Site_Assistant/includes
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * The public-facing functionality of the plugin.
  *
@@ -54,14 +58,13 @@ class Shihela_Contextual_Site_Assistant_Public {
 	/**
 	 * Register the stylesheets for the public-facing side of the site.
 	 *
+	 * Styles are loaded directly inside the widget's Shadow DOM via localized `css_url`
+	 * to prevent duplicate network requests and style leakage.
+	 *
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		// Only enqueue if the user is authorized to use the widget
-		if ( ! $this->is_user_authorized() ) {
-			return;
-		}
-		wp_enqueue_style( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css', array(), $this->version, 'all' );
+		// Intentionally no-op: widget stylesheet is injected inside Shadow DOM with ?ver= cache busting.
 	}
 
 	/**
@@ -91,28 +94,43 @@ class Shihela_Contextual_Site_Assistant_Public {
 		$page_title = $post_id ? get_the_title( $post_id ) : get_bloginfo( 'name' );
 		$page_url   = $post_id ? get_permalink( $post_id ) : get_home_url();
 
-		wp_enqueue_script( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/js/shihela-contextual-site-assistant-public.js', array( 'jquery' ), $this->version, true );
+		wp_enqueue_script(
+			$this->plugin_name,
+			SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/js/shihela-contextual-site-assistant-public.js',
+			array(),
+			$this->version,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		$default_wa_msg = __( 'Hello Support, I am viewing the page {page_title} ({page_url}) and need assistance.', 'shihela-contextual-site-assistant' );
+
 		wp_localize_script( $this->plugin_name, 'shihelaContextualSiteAssistantPublic', array(
-			'rest_url'             => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
-			'nonce'                => wp_create_nonce( 'wp_rest' ), // Standard WP REST API Nonce
-			'css_url'              => SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css',
-			'bot_name'             => esc_html( get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
-			'welcome_message'      => esc_html( get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant.' ) ),
-			'theme_color'          => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
-			'post_id'              => $post_id,
-			'page_title'           => esc_html( $page_title ),
-			'page_url'             => esc_url( $page_url ),
-			'reset_confirm'        => __( 'Are you sure you want to reset this conversation?', 'shihela-contextual-site-assistant' ),
-			'error_response'       => __( 'Sorry, I encountered an issue processing that response.', 'shihela-contextual-site-assistant' ),
-			'error_connection'     => __( 'Sorry, I am unable to connect to the assistant right now. Please try again later.', 'shihela-contextual-site-assistant' ),
-			'max_length'           => (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ),
-			'daily_limit_reached'  => $daily_limit_reached,
-			'error_daily_limit'    => __( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
-			'suggestion_chips'     => $chips_array,
-			'whatsapp_number'      => sanitize_text_field( get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' ) ),
-			'whatsapp_message'     => esc_html( get_option( 'shihela_contextual_site_assistant_whatsapp_message', 'Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan.' ) ),
-			'whatsapp_header_btn'  => get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' ),
+			'rest_url'               => esc_url_raw( get_rest_url( null, '/shihela-contextual-site-assistant/v1/chat' ) ),
+			'nonce'                  => wp_create_nonce( 'wp_rest' ),
+			'css_url'                => esc_url_raw( add_query_arg( 'ver', $this->version, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'public/css/shihela-contextual-site-assistant-public.css' ) ),
+			'bot_name'               => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
+			'welcome_message'        => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_welcome_message', __( 'Hello! I am your AI assistant. How can I help you today?', 'shihela-contextual-site-assistant' ) ) ),
+			'theme_color'            => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
+			'post_id'                => $post_id,
+			'page_title'             => html_entity_decode( wp_strip_all_tags( (string) $page_title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+			'page_url'               => esc_url_raw( $page_url ),
+			'reset_confirm'          => __( 'Are you sure you want to reset this conversation?', 'shihela-contextual-site-assistant' ),
+			'error_response'         => __( 'Sorry, I encountered an issue processing that response.', 'shihela-contextual-site-assistant' ),
+			'error_connection'       => __( 'Sorry, I am unable to connect to the assistant right now. Please try again later.', 'shihela-contextual-site-assistant' ),
+			'max_length'             => (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ),
+			'daily_limit_reached'    => $daily_limit_reached,
+			'error_daily_limit'      => __( 'Daily query limit reached. Please try again tomorrow.', 'shihela-contextual-site-assistant' ),
+			'suggestion_chips'       => $chips_array,
+			'whatsapp_number'        => sanitize_text_field( get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' ) ),
+			'whatsapp_message'       => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_whatsapp_message', $default_wa_msg ) ),
+			'whatsapp_header_btn'    => get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' ),
 			'whatsapp_default_label' => __( 'Chat via WhatsApp', 'shihela-contextual-site-assistant' ),
+			'aria_open_chat'         => __( 'Open Chat Assistant', 'shihela-contextual-site-assistant' ),
+			'aria_panel_label'       => __( 'Site Chat Assistant', 'shihela-contextual-site-assistant' ),
+			'aria_typing'            => __( 'Assistant is typing...', 'shihela-contextual-site-assistant' ),
 		) );
 	}
 
@@ -139,6 +157,36 @@ class Shihela_Contextual_Site_Assistant_Public {
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => array( $this, 'handle_chat_request' ),
 			'permission_callback' => array( $this, 'check_chat_permissions' ),
+			'args'                => array(
+				'message'    => array(
+					'required'          => true,
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+				),
+				'post_id'    => array(
+					'required'          => false,
+					'type'              => 'integer',
+					'default'           => 0,
+					'sanitize_callback' => 'absint',
+				),
+				'history'    => array(
+					'required' => false,
+					'type'     => 'array',
+					'default'  => array(),
+				),
+				'session_id' => array(
+					'required'          => false,
+					'type'              => 'string',
+					'default'           => '',
+					'sanitize_callback' => 'sanitize_text_field',
+				),
+				'hp_value'   => array(
+					'required'          => false,
+					'type'              => 'string',
+					'default'           => '',
+					'sanitize_callback' => 'sanitize_text_field',
+				),
+			),
 		) );
 	}
 
@@ -148,13 +196,22 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function check_chat_permissions( $request ) {
-		$nonce = $request->get_header( 'X-WP-Nonce' );
-		if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Security verification failed.', 'shihela-contextual-site-assistant' ),
-				array( 'status' => 403 )
-			);
+		$nonce          = $request->get_header( 'X-WP-Nonce' );
+		$nonce_valid    = ! empty( $nonce ) && wp_verify_nonce( $nonce, 'wp_rest' );
+		$access_control = get_option( 'shihela_contextual_site_assistant_access_control', 'public' );
+
+		// Require valid nonce for logged-in/admin modes or authenticated users.
+		// For anonymous public visitors behind full-page caches (where nonces may expire after 24h),
+		// fall back to same-origin header verification when nonce is missing/expired.
+		if ( ! $nonce_valid ) {
+			$allow_public_origin_fallback = ( 'public' === $access_control && ! is_user_logged_in() );
+			if ( ! $allow_public_origin_fallback || ! $this->is_same_origin_request( $request ) ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Security verification failed.', 'shihela-contextual-site-assistant' ),
+					array( 'status' => 403 )
+				);
+			}
 		}
 
 		// 1. Role-based Access Control Check
@@ -284,9 +341,13 @@ class Shihela_Contextual_Site_Assistant_Public {
 		$response = $api->get_response( $message, $post_id, $history );
 
 		if ( is_wp_error( $response ) ) {
+			$error_message = current_user_can( 'manage_options' )
+				? $response->get_error_message()
+				: __( 'Sorry, I am unable to process your request right now. Please try again later.', 'shihela-contextual-site-assistant' );
+
 			return new WP_REST_Response( array(
 				'success' => false,
-				'message' => $response->get_error_message(),
+				'message' => $error_message,
 			), 500 );
 		}
 
@@ -354,28 +415,34 @@ class Shihela_Contextual_Site_Assistant_Public {
 					$email_body .= sprintf( '<tr style="background-color: #f9f9f9;"><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; width: 25%%;">%s</td><td style="padding: 10px; border: 1px solid #ddd;">%s</td></tr>', esc_html__( 'Name:', 'shihela-contextual-site-assistant' ), esc_html( $name ) );
 					$email_body .= sprintf( '<tr><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">%s</td><td style="padding: 10px; border: 1px solid #ddd;">%s</td></tr>', esc_html__( 'Contact:', 'shihela-contextual-site-assistant' ), esc_html( $contact ) );
 					$email_body .= sprintf( '<tr style="background-color: #f9f9f9;"><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">%s</td><td style="padding: 10px; border: 1px solid #ddd;">%s</td></tr>', esc_html__( 'Details:', 'shihela-contextual-site-assistant' ), nl2br( esc_html( $details ) ) );
-					$email_body .= sprintf( '<tr><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">%s</td><td style="padding: 10px; border: 1px solid #ddd;"><a href="%s" target="_blank">%s</a></td></tr>', esc_html__( 'Origin Page:', 'shihela-contextual-site-assistant' ), esc_url( $page_url ), esc_url( $page_url ? $page_url : home_url() ) );
+					$email_body .= sprintf( '<tr><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">%s</td><td style="padding: 10px; border: 1px solid #ddd;"><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></td></tr>', esc_html__( 'Origin Page:', 'shihela-contextual-site-assistant' ), esc_url( $page_url ), esc_url( $page_url ? $page_url : home_url() ) );
 					$email_body .= sprintf( '<tr style="background-color: #f9f9f9;"><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">%s</td><td style="padding: 10px; border: 1px solid #ddd;">%s</td></tr>', esc_html__( 'Date:', 'shihela-contextual-site-assistant' ), esc_html( $date_now ) );
 					$email_body .= '</table>';
 					$email_body .= sprintf( '<p style="font-size: 12px; color: #777; margin-top: 25px;">%s</p>', esc_html__( 'This email was automatically generated by the Shihela Contextual Site Assistant Plugin.', 'shihela-contextual-site-assistant' ) );
 					$email_body .= '</body></html>';
 
-					// Header email yang aman untuk menghindari masalah SPF/DMARC jika admin_email menggunakan domain eksternal seperti Gmail
-					$site_domain = wp_parse_url( home_url(), PHP_URL_HOST );
-					$from_email  = 'wordpress@' . $site_domain;
-
+					// Respect site/SMTP configured From address; only set HTML content-type and Reply-To.
 					$headers = array(
 						'Content-Type: text/html; charset=UTF-8',
-						'From: Shihela Site Assistant <' . $from_email . '>',
 						'Reply-To: ' . $admin_email,
 					);
 
-					// Eksekusi pengiriman email bawaan WordPress core
+					/**
+					 * Filter email headers for captured lead notifications.
+					 *
+					 * @since 1.4.0
+					 * @param array  $headers     Email headers array.
+					 * @param string $admin_email Recipient admin email.
+					 * @param array  $lead_data   Captured lead data.
+					 */
+					$headers = apply_filters( 'shihela_assistant_lead_email_headers', $headers, $admin_email, $lead_data );
+
+					// Send lead notification via WordPress core mail.
 					wp_mail( $admin_email, $subject, $email_body, $headers );
 
 
-					// Trigger webhook if URL is configured
-					$webhook_url = get_option( 'shihela_contextual_site_assistant_webhook_url', '' );
+					// Trigger webhook if URL is configured (using wp_safe_remote_post to mitigate SSRF)
+					$webhook_url = esc_url_raw( get_option( 'shihela_contextual_site_assistant_webhook_url', '' ), array( 'http', 'https' ) );
 					if ( ! empty( $webhook_url ) ) {
 						$lead_payload = array(
 							'event'      => 'lead_captured',
@@ -388,14 +455,26 @@ class Shihela_Contextual_Site_Assistant_Public {
 							'session_id' => $session_id,
 						);
 
-						wp_remote_post( $webhook_url, array(
-							'method'    => 'POST',
-							'headers'   => array(
-								'Content-Type' => 'application/json; charset=utf-8',
-							),
-							'body'      => wp_json_encode( $lead_payload ),
-							'timeout'   => 15,
-							'blocking'  => false, // Fire-and-forget (non-blocking) so it does not delay the chat response
+						$json_body       = wp_json_encode( $lead_payload );
+						$webhook_headers = array(
+							'Content-Type' => 'application/json; charset=utf-8',
+						);
+
+						// Optional HMAC-SHA256 signing for enterprise webhook verification.
+						$webhook_secret = (string) get_option( 'shihela_contextual_site_assistant_webhook_secret', '' );
+						if ( '' !== $webhook_secret && is_string( $json_body ) ) {
+							$timestamp                              = (string) time();
+							$signature                              = hash_hmac( 'sha256', $timestamp . '.' . $json_body, $webhook_secret );
+							$webhook_headers['X-Shihela-Timestamp'] = $timestamp;
+							$webhook_headers['X-Shihela-Signature'] = 'sha256=' . $signature;
+						}
+
+						wp_safe_remote_post( $webhook_url, array(
+							'method'   => 'POST',
+							'headers'  => $webhook_headers,
+							'body'     => $json_body,
+							'timeout'  => 15,
+							'blocking' => false, // Fire-and-forget (non-blocking) so it does not delay the chat response
 						) );
 					}
 				}
@@ -494,7 +573,33 @@ class Shihela_Contextual_Site_Assistant_Public {
 			$data['count'] = ( isset( $data['count'] ) ? (int) $data['count'] : 0 ) + 1;
 		}
 
-		update_option( 'shihela_contextual_site_assistant_daily_data', $data );
+		// Store with autoload = false to prevent alloptions cache thrashing on high-traffic sites.
+		update_option( 'shihela_contextual_site_assistant_daily_data', $data, false );
+	}
+
+	/**
+	 * Verify that an unauthenticated public REST request originates from this site.
+	 *
+	 * @since    1.4.0
+	 * @param    WP_REST_Request $request REST API request.
+	 * @return   bool True if Origin or Referer matches site host.
+	 */
+	private function is_same_origin_request( $request ) {
+		$site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+		if ( empty( $site_host ) ) {
+			return false;
+		}
+
+		$origin  = $request->get_header( 'origin' );
+		$referer = $request->get_header( 'referer' );
+		$source  = ! empty( $origin ) ? $origin : $referer;
+
+		if ( empty( $source ) ) {
+			return false;
+		}
+
+		$source_host = wp_parse_url( $source, PHP_URL_HOST );
+		return is_string( $source_host ) && 0 === strcasecmp( $site_host, $source_host );
 	}
 
 	/**
@@ -508,7 +613,14 @@ class Shihela_Contextual_Site_Assistant_Public {
 		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
-		return $ip;
+
+		/**
+		 * Filter the resolved visitor IP address (e.g. for trusted reverse proxy / CDN environments).
+		 *
+		 * @since 1.4.0
+		 * @param string $ip Visitor IP address.
+		 */
+		return (string) apply_filters( 'shihela_assistant_visitor_ip', $ip );
 	}
 
 	/**
@@ -529,12 +641,22 @@ class Shihela_Contextual_Site_Assistant_Public {
 		}
 
 		$ip_limit_key = 'shihela_daily_ip_' . md5( $ip );
-		$count        = (int) get_transient( $ip_limit_key );
+		$stored       = get_transient( $ip_limit_key );
+		if ( is_array( $stored ) ) {
+			$expires_at = isset( $stored['expires_at'] ) ? (int) $stored['expires_at'] : 0;
+			if ( $expires_at > 0 && time() >= $expires_at ) {
+				return false;
+			}
+			$count = isset( $stored['count'] ) ? (int) $stored['count'] : 0;
+		} else {
+			$count = (int) $stored;
+		}
+
 		return $count >= $ip_limit;
 	}
 
 	/**
-	 * Increment the daily request counter for a specific IP.
+	 * Increment the daily request counter for a specific IP (compatible with Redis/Memcached Object Cache).
 	 *
 	 * @since    1.2.0
 	 * @param    string $ip Visitor IP address.
@@ -546,42 +668,80 @@ class Shihela_Contextual_Site_Assistant_Public {
 		}
 
 		$ip_limit_key = 'shihela_daily_ip_' . md5( $ip );
-		$count        = get_transient( $ip_limit_key );
+		$stored       = get_transient( $ip_limit_key );
+		$now_ts       = time();
 
-		if ( false === $count ) {
-			$timezone = wp_timezone();
-			$now      = new DateTime( 'now', $timezone );
-			$tomorrow = new DateTime( 'tomorrow', $timezone );
-			$seconds  = $tomorrow->getTimestamp() - $now->getTimestamp();
-			$seconds  = max( 3600, min( 86400, $seconds ) );
-
-			set_transient( $ip_limit_key, 1, $seconds );
+		if ( is_array( $stored ) && isset( $stored['expires_at'] ) && (int) $stored['expires_at'] > $now_ts ) {
+			$expires_at = (int) $stored['expires_at'];
+			$count      = ( isset( $stored['count'] ) ? (int) $stored['count'] : 0 ) + 1;
+			$remaining  = max( 60, $expires_at - $now_ts );
 		} else {
-			$timeout   = get_option( '_transient_timeout_' . $ip_limit_key );
-			$remaining = $timeout ? $timeout - time() : 86400;
-			$remaining = max( 60, $remaining );
-			set_transient( $ip_limit_key, (int) $count + 1, $remaining );
+			$timezone   = wp_timezone();
+			$now        = new DateTimeImmutable( 'now', $timezone );
+			$tomorrow   = new DateTimeImmutable( 'tomorrow', $timezone );
+			$remaining  = max( 60, min( 86400, $tomorrow->getTimestamp() - $now->getTimestamp() ) );
+			$expires_at = $now_ts + $remaining;
+			$count      = is_numeric( $stored ) ? ( (int) $stored + 1 ) : 1;
 		}
+
+		set_transient(
+			$ip_limit_key,
+			array(
+				'count'      => $count,
+				'expires_at' => $expires_at,
+			),
+			$remaining
+		);
 	}
 
 	/**
-	 * Sanitize the conversation history array.
+	 * Sanitize the conversation history array with role allowlisting and character limits.
 	 *
 	 * @since    1.0.0
+	 * @param    mixed $history Raw history payload from client.
+	 * @return   array Sanitized history entries.
 	 */
 	private function sanitize_chat_history( $history ) {
 		if ( ! is_array( $history ) ) {
 			return array();
 		}
 
+		$allowed_roles   = array( 'user', 'assistant' );
+		$max_length      = max( 300, (int) get_option( 'shihela_contextual_site_assistant_max_length', 300 ) );
+		$max_item_chars  = min( 2000, $max_length * 3 );
+		$max_total_chars = 8000;
+		$total_chars     = 0;
+
 		$sanitized = array();
 		foreach ( $history as $msg ) {
-			if ( isset( $msg['role'] ) && isset( $msg['content'] ) ) {
-				$sanitized[] = array(
-					'role'    => sanitize_text_field( $msg['role'] ),
-					'content' => sanitize_text_field( $msg['content'] ),
-				);
+			if ( ! is_array( $msg ) || ! isset( $msg['role'] ) || ! isset( $msg['content'] ) ) {
+				continue;
 			}
+
+			$role = sanitize_text_field( (string) $msg['role'] );
+			if ( ! in_array( $role, $allowed_roles, true ) ) {
+				continue;
+			}
+
+			$content = sanitize_textarea_field( (string) $msg['content'] );
+			if ( '' === $content ) {
+				continue;
+			}
+
+			if ( mb_strlen( $content ) > $max_item_chars ) {
+				$content = mb_substr( $content, 0, $max_item_chars );
+			}
+
+			$item_len = mb_strlen( $content );
+			if ( $total_chars + $item_len > $max_total_chars ) {
+				break;
+			}
+
+			$total_chars += $item_len;
+			$sanitized[]  = array(
+				'role'    => $role,
+				'content' => $content,
+			);
 		}
 
 		return $sanitized;

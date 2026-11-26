@@ -23,6 +23,7 @@ $shihela_contextual_site_assistant_suggestion_chips    = get_option( 'shihela_co
 $shihela_contextual_site_assistant_theme_color         = get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' );
 $shihela_contextual_site_assistant_widget_position     = get_option( 'shihela_contextual_site_assistant_widget_position', 'bottom-right' );
 $shihela_contextual_site_assistant_webhook_url         = get_option( 'shihela_contextual_site_assistant_webhook_url', '' );
+$shihela_contextual_site_assistant_webhook_secret      = get_option( 'shihela_contextual_site_assistant_webhook_secret', '' );
 
 $shihela_contextual_site_assistant_access_control      = get_option( 'shihela_contextual_site_assistant_access_control', 'public' );
 $shihela_contextual_site_assistant_daily_limit          = get_option( 'shihela_contextual_site_assistant_daily_limit', 100 );
@@ -33,8 +34,17 @@ $shihela_contextual_site_assistant_ip_daily_limit      = get_option( 'shihela_co
 
 // WhatsApp Options (v1.2.0)
 $shihela_contextual_site_assistant_whatsapp_number     = get_option( 'shihela_contextual_site_assistant_whatsapp_number', '' );
-$shihela_contextual_site_assistant_whatsapp_message    = get_option( 'shihela_contextual_site_assistant_whatsapp_message', 'Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan.' );
+$shihela_contextual_site_assistant_whatsapp_message    = get_option( 'shihela_contextual_site_assistant_whatsapp_message', __( 'Hello Support, I am viewing the page {page_title} ({page_url}) and need assistance.', 'shihela-contextual-site-assistant' ) );
 $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' );
+
+$shihela_visibility_labels = array(
+	'public'    => __( 'Public', 'shihela-contextual-site-assistant' ),
+	'logged_in' => __( 'Logged-in Users', 'shihela-contextual-site-assistant' ),
+	'admin'     => __( 'Administrators', 'shihela-contextual-site-assistant' ),
+);
+$shihela_visibility_label  = isset( $shihela_visibility_labels[ $shihela_contextual_site_assistant_access_control ] )
+	? $shihela_visibility_labels[ $shihela_contextual_site_assistant_access_control ]
+	: $shihela_visibility_labels['public'];
 ?>
 
 <div class="wrap shihela-contextual-site-assistant-admin-wrap">
@@ -45,7 +55,7 @@ $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_co
 				<span class="dashicons dashicons-admin-comments"></span>
 			</div>
 			<div>
-				<h1><?php esc_html_e( 'Shihela Site Assistant', 'shihela-contextual-site-assistant' ); ?> <span class="shihela-version-pill">v1.3.0</span></h1>
+				<h1><?php esc_html_e( 'Shihela Site Assistant', 'shihela-contextual-site-assistant' ); ?> <span class="shihela-version-pill"><?php echo esc_html( 'v' . SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION ); ?></span></h1>
 				<p class="shihela-contextual-site-assistant-tagline"><?php esc_html_e( 'Configure floating context-aware AI chat, WhatsApp CS routing, and security quotas.', 'shihela-contextual-site-assistant' ); ?></p>
 			</div>
 		</div>
@@ -88,7 +98,7 @@ $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_co
 					<ul class="shihela-contextual-site-assistant-status-list">
 						<li><strong><?php esc_html_e( 'WP AI Client:', 'shihela-contextual-site-assistant' ); ?></strong> <span class="shihela-badge green"><?php echo function_exists( 'wp_ai_client_prompt' ) ? esc_html__( 'Active', 'shihela-contextual-site-assistant' ) : esc_html__( 'Inactive', 'shihela-contextual-site-assistant' ); ?></span></li>
 						<li><strong><?php esc_html_e( 'WhatsApp CS:', 'shihela-contextual-site-assistant' ); ?></strong> <span class="shihela-badge <?php echo ! empty( $shihela_contextual_site_assistant_whatsapp_number ) ? 'green' : 'gray'; ?>"><?php echo ! empty( $shihela_contextual_site_assistant_whatsapp_number ) ? esc_html__( 'Enabled', 'shihela-contextual-site-assistant' ) : esc_html__( 'Not Set', 'shihela-contextual-site-assistant' ); ?></span></li>
-						<li><strong><?php esc_html_e( 'Visibility:', 'shihela-contextual-site-assistant' ); ?></strong> <span><?php echo esc_html( ucfirst( $shihela_contextual_site_assistant_access_control ) ); ?></span></li>
+						<li><strong><?php esc_html_e( 'Visibility:', 'shihela-contextual-site-assistant' ); ?></strong> <span><?php echo esc_html( $shihela_visibility_label ); ?></span></li>
 					</ul>
 				</div>
 
@@ -159,7 +169,7 @@ $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_co
 				<div class="shihela-admin-tab-panel" id="tab-whatsapp" role="tabpanel" style="display: none;">
 					<div class="shihela-contextual-site-assistant-card">
 						<div class="shihela-card-header green-header">
-							<h2><span class="dashicons dashicons-whatsapp"></span> <?php esc_html_e( 'WhatsApp Direct CS Routing (v1.2.0)', 'shihela-contextual-site-assistant' ); ?></h2>
+							<h2><span class="dashicons dashicons-whatsapp"></span> <?php esc_html_e( 'WhatsApp Direct CS Routing', 'shihela-contextual-site-assistant' ); ?></h2>
 							<p><?php esc_html_e( 'Enable seamless human handoff. When visitors ask for CS or human support, Shihela provides an interactive Click-to-WhatsApp button.', 'shihela-contextual-site-assistant' ); ?></p>
 						</div>
 						<div class="shihela-contextual-site-assistant-card-body">
@@ -246,6 +256,12 @@ $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_co
 								<label for="shihela_contextual_site_assistant_webhook_url"><?php esc_html_e( 'Webhook Endpoint URL', 'shihela-contextual-site-assistant' ); ?></label>
 								<input type="url" name="shihela_contextual_site_assistant_webhook_url" id="shihela_contextual_site_assistant_webhook_url" value="<?php echo esc_url( $shihela_contextual_site_assistant_webhook_url ); ?>" class="large-text shihela-contextual-site-assistant-input" placeholder="https://hooks.zapier.com/... or https://hook.make.com/...">
 								<p class="description"><?php esc_html_e( 'Whenever a new lead is captured by the chatbot, a non-blocking POST request containing JSON data is sent to this URL.', 'shihela-contextual-site-assistant' ); ?></p>
+							</div>
+
+							<div class="shihela-contextual-site-assistant-form-group">
+								<label for="shihela_contextual_site_assistant_webhook_secret"><?php esc_html_e( 'Webhook Signing Secret (Optional, HMAC-SHA256)', 'shihela-contextual-site-assistant' ); ?></label>
+								<input type="password" name="shihela_contextual_site_assistant_webhook_secret" id="shihela_contextual_site_assistant_webhook_secret" value="<?php echo esc_attr( $shihela_contextual_site_assistant_webhook_secret ); ?>" class="regular-text shihela-contextual-site-assistant-input" autocomplete="new-password" placeholder="<?php esc_attr_e( 'Enter shared secret key...', 'shihela-contextual-site-assistant' ); ?>">
+								<p class="description"><?php esc_html_e( 'When set, outgoing webhooks include X-Shihela-Timestamp and X-Shihela-Signature (sha256 HMAC of timestamp.payload) headers for authenticity verification.', 'shihela-contextual-site-assistant' ); ?></p>
 							</div>
 
 							<div class="shihela-webhook-box">

@@ -9,6 +9,10 @@
  * @subpackage Shihela_Contextual_Site_Assistant/includes
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -55,16 +59,42 @@ class Shihela_Contextual_Site_Assistant_Admin {
 	 * Register the stylesheets for the admin area.
 	 *
 	 * @since    1.0.0
+	 * @param    string $hook Current admin page hook suffix.
 	 */
-	public function enqueue_styles() {
+	public function enqueue_styles( $hook = '' ) {
+		if ( false === strpos( (string) $hook, 'shihela-contextual-site-assistant' ) ) {
+			return;
+		}
 		wp_enqueue_style( $this->plugin_name, SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'admin/css/shihela-contextual-site-assistant-admin.css', array(), $this->version, 'all' );
 	}
 
+	/**
+	 * Register the JavaScript for the admin area.
+	 *
+	 * @since    1.0.0
+	 * @param    string $hook Current admin page hook suffix.
+	 */
 	public function enqueue_scripts( $hook ) {
-		if ( false === strpos( $hook, 'shihela-contextual-site-assistant' ) ) {
+		if ( false === strpos( (string) $hook, 'shihela-contextual-site-assistant' ) ) {
 			return;
 		}
-		wp_enqueue_script( $this->plugin_name . '-admin', SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'admin/js/shihela-contextual-site-assistant-admin.js', array( 'jquery' ), $this->version, true );
+		wp_enqueue_script(
+			$this->plugin_name . '-admin',
+			SHIHELA_CONTEXTUAL_SITE_ASSISTANT_URL . 'admin/js/shihela-contextual-site-assistant-admin.js',
+			array( 'jquery' ),
+			$this->version,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			$this->plugin_name . '-admin',
+			'shihelaContextualSiteAssistantAdmin',
+			array(
+				'confirm_delete_lead' => __( 'Are you sure you want to delete this lead?', 'shihela-contextual-site-assistant' ),
+			)
+		);
 	}
 
 	/**
@@ -73,6 +103,11 @@ class Shihela_Contextual_Site_Assistant_Admin {
 	 * @since    1.0.0
 	 */
 	public function add_plugin_admin_menu() {
+		// Inline SVG icon for crisp rendering in WordPress 7.2+ SVG admin sidebar.
+		$menu_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9c0 1.81.53 3.49 1.45 4.89L3.03 20.45c-.1.25-.01.53.21.67.21.14.49.15.72.02l3.82-2.09c1.28.62 2.72.95 4.22.95z"/><circle cx="8.5" cy="12" r="1" fill="black"/><circle cx="12" cy="12" r="1" fill="black"/><circle cx="15.5" cy="12" r="1" fill="black"/></svg>';
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		$menu_icon = 'data:image/svg+xml;base64,' . base64_encode( $menu_svg );
+
 		// Register top-level parent menu
 		add_menu_page(
 			__( 'Shihela Site Assistant', 'shihela-contextual-site-assistant' ),
@@ -80,7 +115,7 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'manage_options',
 			'shihela-contextual-site-assistant',
 			array( $this, 'display_plugin_admin_page' ),
-			'dashicons-text-page',
+			$menu_icon,
 			90
 		);
 
@@ -119,18 +154,22 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			$nonce   = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
 
 			// Verify security Nonce
-			if ( wp_verify_nonce( $nonce, 'delete_lead_' . $lead_id ) ) {
-				if ( current_user_can( 'manage_options' ) ) {
-					global $wpdb;
-					$table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-					$wpdb->delete( $table_name, array( 'id' => $lead_id ) );
-
-					// Redirect back safely before any HTML output
-					wp_safe_redirect( admin_url( 'admin.php?page=shihela-contextual-site-assistant-leads&deleted=1' ) );
-					exit;
-				}
+			if ( ! wp_verify_nonce( $nonce, 'delete_lead_' . $lead_id ) ) {
+				wp_die( esc_html__( 'Security verification failed.', 'shihela-contextual-site-assistant' ), 403 );
 			}
+
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( esc_html__( 'You do not have permission to perform this action.', 'shihela-contextual-site-assistant' ), 403 );
+			}
+
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->delete( $table_name, array( 'id' => $lead_id ), array( '%d' ) );
+
+			// Redirect back safely before any HTML output
+			wp_safe_redirect( admin_url( 'admin.php?page=shihela-contextual-site-assistant-leads&deleted=1' ) );
+			exit;
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -139,11 +178,15 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
 
 			// Verify security Nonce
-			if ( wp_verify_nonce( $nonce, 'shihela_contextual_site_assistant_export_leads' ) ) {
-				if ( current_user_can( 'manage_options' ) ) {
-					$this->export_leads_to_csv();
-				}
+			if ( ! wp_verify_nonce( $nonce, 'shihela_contextual_site_assistant_export_leads' ) ) {
+				wp_die( esc_html__( 'Security verification failed.', 'shihela-contextual-site-assistant' ), 403 );
 			}
+
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( esc_html__( 'You do not have permission to perform this action.', 'shihela-contextual-site-assistant' ), 403 );
+			}
+
+			$this->export_leads_to_csv();
 		}
 	}
 
@@ -185,13 +228,6 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			$params[] = $end_date . ' 23:59:59';
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$sql = "SELECT lead_date, lead_name, lead_email, lead_message, page_url FROM %i WHERE " . implode( " AND ", $where_clauses ) . " ORDER BY lead_date DESC";
-		array_unshift( $params, $table_name );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$leads = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
-
 		// Set headers for download
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename=shihela-contextual-site-assistant-leads-' . current_time( 'Y-m-d' ) . '.csv' );
@@ -205,32 +241,75 @@ class Shihela_Contextual_Site_Assistant_Admin {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputs
 		fputs( $output, "\xEF\xBB\xBF" );
 
-		// Column headers
+		// Column headers (explicit $escape = '' for PHP 8.4–8.6 compatibility)
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
-		fputcsv( $output, array(
-			__( 'Date & Time', 'shihela-contextual-site-assistant' ),
-			__( 'Name', 'shihela-contextual-site-assistant' ),
-			__( 'Contact Info', 'shihela-contextual-site-assistant' ),
-			__( 'Inquiry Details', 'shihela-contextual-site-assistant' ),
-			__( 'Page Origin', 'shihela-contextual-site-assistant' ),
-		) );
+		fputcsv(
+			$output,
+			array(
+				__( 'Date & Time', 'shihela-contextual-site-assistant' ),
+				__( 'Name', 'shihela-contextual-site-assistant' ),
+				__( 'Contact Info', 'shihela-contextual-site-assistant' ),
+				__( 'Inquiry Details', 'shihela-contextual-site-assistant' ),
+				__( 'Page Origin', 'shihela-contextual-site-assistant' ),
+			),
+			',',
+			'"',
+			''
+		);
 
-		if ( ! empty( $leads ) ) {
-			foreach ( $leads as $lead ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
-				fputcsv( $output, array(
-					$lead->lead_date,
-					$lead->lead_name,
-					$lead->lead_email,
-					$lead->lead_message,
-					$lead->page_url,
-				) );
+		// Stream leads in chunked batches of 500 rows to prevent PHP memory exhaustion on large datasets.
+		$batch_size = 500;
+		$offset     = 0;
+		$where_sql  = implode( ' AND ', $where_clauses );
+
+		do {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$sql          = "SELECT lead_date, lead_name, lead_email, lead_message, page_url FROM %i WHERE {$where_sql} ORDER BY lead_date DESC LIMIT %d OFFSET %d";
+			$batch_params = array_merge( array( $table_name ), $params, array( $batch_size, $offset ) );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$leads = $wpdb->get_results( $wpdb->prepare( $sql, $batch_params ) );
+
+			if ( ! empty( $leads ) ) {
+				foreach ( $leads as $lead ) {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
+					fputcsv(
+						$output,
+						array(
+							$this->escape_csv_cell( $lead->lead_date ),
+							$this->escape_csv_cell( $lead->lead_name ),
+							$this->escape_csv_cell( $lead->lead_email ),
+							$this->escape_csv_cell( $lead->lead_message ),
+							$this->escape_csv_cell( $lead->page_url ),
+						),
+						',',
+						'"',
+						''
+					);
+				}
 			}
-		}
+
+			$offset += $batch_size;
+		} while ( is_array( $leads ) && count( $leads ) === $batch_size );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		fclose( $output );
 		exit;
+	}
+
+	/**
+	 * Neutralize spreadsheet formula injection characters in CSV cells.
+	 *
+	 * @since    1.4.0
+	 * @param    mixed $value Cell value.
+	 * @return   string Safe CSV cell value.
+	 */
+	private function escape_csv_cell( $value ) {
+		$str = (string) $value;
+		if ( '' !== $str && in_array( $str[0], array( '=', '+', '-', '@', "\t", "\r" ), true ) ) {
+			return "'" . $str;
+		}
+		return $str;
 	}
 
 	/**
@@ -292,7 +371,13 @@ class Shihela_Contextual_Site_Assistant_Admin {
 
 		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_webhook_url', array(
 			'type'              => 'string',
-			'sanitize_callback' => 'esc_url_raw',
+			'sanitize_callback' => array( $this, 'sanitize_webhook_url' ),
+			'default'           => '',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_webhook_secret', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '',
 		) );
 
@@ -341,7 +426,7 @@ class Shihela_Contextual_Site_Assistant_Admin {
 		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_whatsapp_message', array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
-			'default'           => 'Halo CS/Admin, saya sedang melihat halaman {page_title} ({page_url}) dan membutuhkan bantuan.',
+			'default'           => __( 'Hello Support, I am viewing the page {page_title} ({page_url}) and need assistance.', 'shihela-contextual-site-assistant' ),
 		) );
 
 		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_whatsapp_header_btn', array(
@@ -349,6 +434,25 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '1',
 		) );
+	}
+
+	/**
+	 * Sanitize webhook URL and restrict to http/https schemes.
+	 *
+	 * @since    1.4.0
+	 * @param    mixed $value Input URL.
+	 * @return   string Sanitized webhook URL or empty string.
+	 */
+	public function sanitize_webhook_url( $value ) {
+		$url = esc_url_raw( trim( (string) $value ), array( 'http', 'https' ) );
+		if ( empty( $url ) ) {
+			return '';
+		}
+		$scheme = wp_parse_url( $url, PHP_URL_SCHEME );
+		if ( ! in_array( $scheme, array( 'http', 'https' ), true ) ) {
+			return '';
+		}
+		return $url;
 	}
 
 	/**

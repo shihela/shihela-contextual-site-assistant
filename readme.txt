@@ -3,7 +3,7 @@ Contributors: shihela
 Tags: ai-client, customer-support, lead-generation, ai-assistant, wordpress-ai
 Requires at least: 7.0
 Tested up to: 7.2
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,8 +20,10 @@ The plugin also automatically captures leads when visitors leave their contact i
 
 == Features ==
 
-* **Context-Aware Responses:** Automatically reads page contents to answer questions in context.
-* **WordPress Native AI Client:** Fully integrated with the native WordPress 7.0+ AI Client API.
+* **Context-Aware Responses:** Automatically reads page contents—plus read-only WooCommerce product details (price, stock, SKU, attributes) when WooCommerce is active—to answer questions accurately.
+* **WordPress Native AI Client:** Fully integrated with the native WordPress 7.0–7.2 AI Client API with smart Settings > Connectors readiness status.
+* **Proactive Greeting Bubble & Dark Mode:** Optional time-delayed greeting callout bubble, plus Light, Dark, and Auto OS-matched widget themes.
+* **Granular Visibility & GDPR Controls:** Exclude specific Page/Post IDs globally, disable the widget per page via the editor sidebar metabox, optional footer Privacy Policy notice, and full WordPress Privacy Tools (Exporter & Eraser) integration.
 * **WhatsApp Admin / CS Integration:** Direct WhatsApp contact button in chat and header with dynamic page context pre-filled messages.
 * **Modern SaaS Tabbed Admin UI:** Sleek, organized 5-tab settings layout for effortless plugin management.
 * **Provider Agnostic:** Out-of-the-box support for any LLM provider configured in your WordPress dashboard (Gemini, OpenAI, Anthropic, etc.).
@@ -72,6 +74,14 @@ Yes. You can manage and switch your AI providers globally inside WordPress under
 6. scsa-6.png - Captured customer leads management panel in the WordPress dashboard.
 
 == Changelog ==
+
+= 1.5.0 =
+* Feature: Added Basic Read-Only WooCommerce Product Context (price, sale price, SKU, stock status, categories, short description, and attributes) on product pages.
+* Feature: Added Basic Time-Delay Proactive Greeting Bubble (dismissible per session, automatically yields to PRO triggers when active).
+* Feature: Added Light, Dark, and Auto (OS-matched) Widget Appearance Modes inside Shadow DOM.
+* Feature: Added Page/Post Visibility Controls (global Excluded Page IDs setting + per-page editor sidebar metabox "Disable chat widget on this page").
+* Feature: Added Smart WordPress Connectors readiness check with direct Settings > Connectors action banner and Quick Usage Summary (today's chats, total leads, WooCommerce status) in the admin dashboard.
+* Feature: Added optional GDPR / Privacy Policy footer consent notice inside the chat widget.
 
 = 1.4.0 =
 * Security: Fixed IDOR vulnerability in page context extraction by enforcing viewable post types, published/read permissions, and excluding password-protected posts.

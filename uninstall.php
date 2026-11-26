@@ -39,11 +39,20 @@ function shihela_contextual_site_assistant_uninstall_site() {
 		'shihela_contextual_site_assistant_whatsapp_header_btn',
 		'shihela_contextual_site_assistant_daily_data',
 		'shihela_contextual_site_assistant_db_version',
+		'shihela_contextual_site_assistant_theme_mode',
+		'shihela_contextual_site_assistant_greeting_enable',
+		'shihela_contextual_site_assistant_greeting_delay',
+		'shihela_contextual_site_assistant_greeting_text',
+		'shihela_contextual_site_assistant_excluded_pages',
+		'shihela_contextual_site_assistant_privacy_notice',
 	);
 
 	foreach ( $option_keys as $option_key ) {
 		delete_option( $option_key );
 	}
+
+	// Remove per-page opt-out post meta.
+	delete_post_meta_by_key( '_shihela_csa_disable_widget' );
 
 	global $wpdb;
 

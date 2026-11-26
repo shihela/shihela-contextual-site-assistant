@@ -250,6 +250,12 @@ class Shihela_Contextual_Site_Assistant_API {
 				if ( ! empty( $trimmed_content ) ) {
 					$context .= "Page Content Text:\n" . $trimmed_content . "\n";
 				}
+
+				// Basic Read-Only WooCommerce Product Context (skipped if PRO Commerce engine is active to avoid duplication).
+				$wc_context = $this->get_woocommerce_product_context( $post );
+				if ( ! empty( $wc_context ) ) {
+					$context .= "\n" . $wc_context;
+				}
 			}
 		}
 
@@ -261,6 +267,85 @@ class Shihela_Contextual_Site_Assistant_API {
 		 * @param int    $post_id Current post ID.
 		 */
 		return apply_filters( 'shihela_assistant_chat_context', $context, $post_id );
+	}
+
+	/**
+	 * Extract basic read-only WooCommerce product details (price, stock, SKU, attributes) for the current product page.
+	 *
+	 * @since    1.5.0
+	 * @param    WP_Post $post Verified viewable post object.
+	 * @return   string Formatted WooCommerce product context or empty string.
+	 */
+	private function get_woocommerce_product_context( $post ) {
+		if ( ! function_exists( 'wc_get_product' ) || 'product' !== $post->post_type ) {
+			return '';
+		}
+
+		// Yield to PRO Commerce 2.0 engine when active so product details are not duplicated.
+		if ( get_option( 'shihela_pro_wc_enable_commerce', false ) ) {
+			return '';
+		}
+
+		$product = wc_get_product( $post->ID );
+		if ( ! $product ) {
+			return '';
+		}
+
+		$sku = $product->get_sku();
+		if ( $product->is_on_sale() && $product->get_regular_price() ) {
+			$price_raw = sprintf(
+				'%1$s (Regular: %2$s)',
+				wc_price( $product->get_price() ),
+				wc_price( $product->get_regular_price() )
+			);
+		} else {
+			$price_raw = $product->get_price_html() ? $product->get_price_html() : wc_price( $product->get_price() );
+		}
+		$price      = trim( html_entity_decode( wp_strip_all_tags( (string) $price_raw ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		$stock      = $product->is_in_stock() ? 'In Stock' : 'Out of Stock';
+		$short_desc = $this->sanitize_page_text( (string) $product->get_short_description() );
+
+		$wc_context  = "WooCommerce Product Details:\n";
+		$wc_context .= 'Product Name: ' . $product->get_name() . "\n";
+		if ( ! empty( $sku ) ) {
+			$wc_context .= 'SKU: ' . $sku . "\n";
+		}
+		if ( ! empty( $price ) ) {
+			$wc_context .= 'Price: ' . $price . "\n";
+		}
+		$wc_context .= 'Availability: ' . $stock . "\n";
+
+		$terms = get_the_terms( $post->ID, 'product_cat' );
+		if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+			$wc_context .= 'Product Categories: ' . implode( ', ', wp_list_pluck( $terms, 'name' ) ) . "\n";
+		}
+
+		if ( ! empty( $short_desc ) ) {
+			$wc_context .= 'Product Summary: ' . $short_desc . "\n";
+		}
+
+		$attributes = $product->get_attributes();
+		if ( ! empty( $attributes ) ) {
+			$attr_lines = array();
+			foreach ( $attributes as $attribute ) {
+				if ( $attribute->is_taxonomy() ) {
+					$attr_terms = wc_get_product_terms( $product->get_id(), $attribute->get_name(), array( 'fields' => 'names' ) );
+					if ( ! empty( $attr_terms ) && ! is_wp_error( $attr_terms ) ) {
+						$attr_lines[] = wc_attribute_label( $attribute->get_name() ) . ': ' . implode( ', ', $attr_terms );
+					}
+				} else {
+					$options = $attribute->get_options();
+					if ( ! empty( $options ) ) {
+						$attr_lines[] = $attribute->get_name() . ': ' . implode( ', ', $options );
+					}
+				}
+			}
+			if ( ! empty( $attr_lines ) ) {
+				$wc_context .= 'Attributes: ' . implode( ' | ', $attr_lines ) . "\n";
+			}
+		}
+
+		return $wc_context;
 	}
 
 	/**

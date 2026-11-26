@@ -15,7 +15,7 @@
  * Plugin Name:       Shihela Contextual Site Assistant
  * Plugin URI:        https://yukdigitalz.com/shihela-contextual-site-assistant
  * Description:       A floating AI assistant that answers visitors' questions using current page context, powered by the native WordPress AI Client.
- * Version:           1.4.0
+ * Version:           1.5.0
  * Requires at least: 7.0
  * Requires PHP:      7.4
  * Author:            Shihela
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently active version of the plugin.
  */
-define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION', '1.4.0' );
+define( 'SHIHELA_CONTEXTUAL_SITE_ASSISTANT_VERSION', '1.5.0' );
 
 /**
  * Path constant for the plugin directory.

@@ -73,7 +73,7 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-		if ( ! $this->is_user_authorized() ) {
+		if ( ! $this->should_display_widget() ) {
 			return;
 		}
 
@@ -114,6 +114,7 @@ class Shihela_Contextual_Site_Assistant_Public {
 			'bot_name'               => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' ) ),
 			'welcome_message'        => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_welcome_message', __( 'Hello! I am your AI assistant. How can I help you today?', 'shihela-contextual-site-assistant' ) ) ),
 			'theme_color'            => sanitize_hex_color( get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' ) ),
+			'theme_mode'             => sanitize_key( (string) get_option( 'shihela_contextual_site_assistant_theme_mode', 'light' ) ),
 			'post_id'                => $post_id,
 			'page_title'             => html_entity_decode( wp_strip_all_tags( (string) $page_title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
 			'page_url'               => esc_url_raw( $page_url ),
@@ -128,6 +129,9 @@ class Shihela_Contextual_Site_Assistant_Public {
 			'whatsapp_message'       => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_whatsapp_message', $default_wa_msg ) ),
 			'whatsapp_header_btn'    => get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' ),
 			'whatsapp_default_label' => __( 'Chat via WhatsApp', 'shihela-contextual-site-assistant' ),
+			'greeting_enable'        => '1' === get_option( 'shihela_contextual_site_assistant_greeting_enable', '0' ),
+			'greeting_delay'         => max( 1, (int) get_option( 'shihela_contextual_site_assistant_greeting_delay', 5 ) ),
+			'greeting_text'          => wp_strip_all_tags( (string) get_option( 'shihela_contextual_site_assistant_greeting_text', __( 'Need help with this page? Ask me!', 'shihela-contextual-site-assistant' ) ) ),
 			'aria_open_chat'         => __( 'Open Chat Assistant', 'shihela-contextual-site-assistant' ),
 			'aria_panel_label'       => __( 'Site Chat Assistant', 'shihela-contextual-site-assistant' ),
 			'aria_typing'            => __( 'Assistant is typing...', 'shihela-contextual-site-assistant' ),
@@ -140,11 +144,54 @@ class Shihela_Contextual_Site_Assistant_Public {
 	 * @since    1.0.0
 	 */
 	public function render_chat_widget() {
-		if ( ! $this->is_user_authorized() ) {
+		if ( ! $this->should_display_widget() ) {
 			return;
 		}
 
 		require_once SHIHELA_CONTEXTUAL_SITE_ASSISTANT_PATH . 'public/partials/shihela-contextual-site-assistant-public-display.php';
+	}
+
+	/**
+	 * Determine whether the floating chat widget should be displayed on the current page.
+	 * Evaluates authorization, per-page metabox opt-out, and excluded page IDs.
+	 *
+	 * @since    1.5.0
+	 * @return   bool True if widget should render, false otherwise.
+	 */
+	private function should_display_widget() {
+		if ( ! $this->is_user_authorized() ) {
+			return false;
+		}
+
+		$post_id        = is_singular() ? (int) get_queried_object_id() : 0;
+		$should_display = true;
+
+		if ( $post_id > 0 ) {
+			// Check per-page metabox opt-out.
+			if ( '1' === get_post_meta( $post_id, '_shihela_csa_disable_widget', true ) ) {
+				$should_display = false;
+			}
+
+			// Check global excluded page IDs list.
+			if ( $should_display ) {
+				$raw_excluded = (string) get_option( 'shihela_contextual_site_assistant_excluded_pages', '' );
+				if ( '' !== trim( $raw_excluded ) ) {
+					$excluded_ids = array_filter( array_map( 'absint', explode( ',', $raw_excluded ) ) );
+					if ( in_array( $post_id, $excluded_ids, true ) ) {
+						$should_display = false;
+					}
+				}
+			}
+		}
+
+		/**
+		 * Filter whether the floating chat widget should display on the current request.
+		 *
+		 * @since 1.5.0
+		 * @param bool $should_display Whether widget is allowed to display.
+		 * @param int  $post_id        Current singular post/page ID (0 for archives/home).
+		 */
+		return (bool) apply_filters( 'shihela_assistant_should_display', $should_display, $post_id );
 	}
 
 	/**

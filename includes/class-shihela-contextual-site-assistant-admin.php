@@ -434,6 +434,156 @@ class Shihela_Contextual_Site_Assistant_Admin {
 			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '1',
 		) );
+
+		// v1.5.0 Settings: Theme Mode, Proactive Greeting Bubble, Visibility Rules, & Privacy Consent Notice.
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_theme_mode', array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_theme_mode' ),
+			'default'           => 'light',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_greeting_enable', array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+			'default'           => '0',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_greeting_delay', array(
+			'type'              => 'integer',
+			'sanitize_callback' => array( $this, 'sanitize_greeting_delay' ),
+			'default'           => 5,
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_greeting_text', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => __( 'Need help with this page? Ask me!', 'shihela-contextual-site-assistant' ),
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_excluded_pages', array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_excluded_pages' ),
+			'default'           => '',
+		) );
+
+		register_setting( $this->plugin_name . '_group', 'shihela_contextual_site_assistant_privacy_notice', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => '',
+		) );
+	}
+
+	/**
+	 * Sanitize widget theme mode (light, dark, auto).
+	 *
+	 * @since    1.5.0
+	 * @param    mixed $value Raw input value.
+	 * @return   string Valid theme mode.
+	 */
+	public function sanitize_theme_mode( $value ) {
+		$val = sanitize_key( (string) $value );
+		return in_array( $val, array( 'light', 'dark', 'auto' ), true ) ? $val : 'light';
+	}
+
+	/**
+	 * Sanitize checkbox value to '1' or '0'.
+	 *
+	 * @since    1.5.0
+	 * @param    mixed $value Raw input value.
+	 * @return   string '1' or '0'.
+	 */
+	public function sanitize_checkbox( $value ) {
+		return ! empty( $value ) ? '1' : '0';
+	}
+
+	/**
+	 * Sanitize proactive greeting delay in seconds (clamped 1–120).
+	 *
+	 * @since    1.5.0
+	 * @param    mixed $value Raw input value.
+	 * @return   int Clamped seconds.
+	 */
+	public function sanitize_greeting_delay( $value ) {
+		$seconds = absint( $value );
+		return max( 1, min( 120, $seconds ) );
+	}
+
+	/**
+	 * Sanitize comma-separated excluded post/page IDs.
+	 *
+	 * @since    1.5.0
+	 * @param    mixed $value Raw input string.
+	 * @return   string Normalized comma-separated positive integers.
+	 */
+	public function sanitize_excluded_pages( $value ) {
+		$parts = array_filter( array_map( 'absint', explode( ',', (string) $value ) ) );
+		return implode( ', ', array_unique( $parts ) );
+	}
+
+	/**
+	 * Register per-page visibility meta box on public post types.
+	 *
+	 * @since    1.5.0
+	 */
+	public function add_visibility_meta_box() {
+		$post_types = get_post_types( array( 'public' => true ), 'names' );
+		unset( $post_types['attachment'] );
+
+		foreach ( $post_types as $post_type ) {
+			add_meta_box(
+				'shihela_csa_visibility_meta_box',
+				__( 'Shihela Site Assistant', 'shihela-contextual-site-assistant' ),
+				array( $this, 'render_visibility_meta_box' ),
+				$post_type,
+				'side',
+				'default'
+			);
+		}
+	}
+
+	/**
+	 * Render per-page visibility meta box.
+	 *
+	 * @since    1.5.0
+	 * @param    WP_Post $post Current post object.
+	 */
+	public function render_visibility_meta_box( $post ) {
+		wp_nonce_field( 'shihela_csa_visibility_meta', 'shihela_csa_visibility_nonce' );
+		$disabled = get_post_meta( $post->ID, '_shihela_csa_disable_widget', true );
+		?>
+		<label for="shihela_csa_disable_widget">
+			<input type="checkbox" name="shihela_csa_disable_widget" id="shihela_csa_disable_widget" value="1" <?php checked( $disabled, '1' ); ?> />
+			<?php esc_html_e( 'Disable chat widget on this page', 'shihela-contextual-site-assistant' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Save per-page visibility meta box value.
+	 *
+	 * @since    1.5.0
+	 * @param    int $post_id Saved post ID.
+	 */
+	public function save_visibility_meta_box( $post_id ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( ! isset( $_POST['shihela_csa_visibility_nonce'] ) ) {
+			return;
+		}
+		$nonce = sanitize_text_field( wp_unslash( $_POST['shihela_csa_visibility_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, 'shihela_csa_visibility_meta' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['shihela_csa_disable_widget'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['shihela_csa_disable_widget'] ) ) ) {
+			update_post_meta( $post_id, '_shihela_csa_disable_widget', '1' );
+		} else {
+			delete_post_meta( $post_id, '_shihela_csa_disable_widget' );
+		}
 	}
 
 	/**

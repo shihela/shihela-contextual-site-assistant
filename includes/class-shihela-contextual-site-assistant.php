@@ -139,6 +139,8 @@ class Shihela_Contextual_Site_Assistant {
 		add_action( 'admin_menu', array( $plugin_admin, 'add_plugin_admin_menu' ) );
 		add_action( 'admin_init', array( $plugin_admin, 'register_settings' ) );
 		add_action( 'admin_init', array( $plugin_admin, 'handle_lead_actions' ) );
+		add_action( 'add_meta_boxes', array( $plugin_admin, 'add_visibility_meta_box' ) );
+		add_action( 'save_post', array( $plugin_admin, 'save_visibility_meta_box' ) );
 	}
 
 	/**

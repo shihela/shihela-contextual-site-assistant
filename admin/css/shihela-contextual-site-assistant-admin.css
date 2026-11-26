@@ -235,6 +235,48 @@
 	color: #64748b;
 }
 
+.shihela-badge.amber {
+	background: #fef3c7;
+	color: #b45309;
+}
+
+.shihela-warning-banner {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	background: #fffbeb;
+	border: 1px solid #fcd34d;
+	border-radius: 12px;
+	padding: 16px 20px;
+	margin-bottom: 24px;
+	color: #92400e;
+}
+
+.shihela-warning-banner .dashicons {
+	color: #d97706;
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+}
+
+.shihela-warning-banner-body {
+	flex: 1;
+}
+
+.shihela-warning-banner-body strong {
+	display: block;
+	font-size: 14px;
+	color: #78350f;
+	margin-bottom: 2px;
+}
+
+.shihela-warning-banner-body p {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
 /* Right Main Content Area */
 .shihela-admin-content-area {
 	flex: 1;

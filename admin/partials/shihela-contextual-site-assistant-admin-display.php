@@ -37,6 +37,41 @@ $shihela_contextual_site_assistant_whatsapp_number     = get_option( 'shihela_co
 $shihela_contextual_site_assistant_whatsapp_message    = get_option( 'shihela_contextual_site_assistant_whatsapp_message', __( 'Hello Support, I am viewing the page {page_title} ({page_url}) and need assistance.', 'shihela-contextual-site-assistant' ) );
 $shihela_contextual_site_assistant_whatsapp_header_btn = get_option( 'shihela_contextual_site_assistant_whatsapp_header_btn', '1' );
 
+// v1.5.0 Options: Theme Mode, Proactive Greeting Bubble, Visibility Rules, & Privacy Consent Notice.
+$shihela_contextual_site_assistant_theme_mode      = get_option( 'shihela_contextual_site_assistant_theme_mode', 'light' );
+$shihela_contextual_site_assistant_greeting_enable = get_option( 'shihela_contextual_site_assistant_greeting_enable', '0' );
+$shihela_contextual_site_assistant_greeting_delay  = (int) get_option( 'shihela_contextual_site_assistant_greeting_delay', 5 );
+$shihela_contextual_site_assistant_greeting_text   = get_option( 'shihela_contextual_site_assistant_greeting_text', __( 'Need help with this page? Ask me!', 'shihela-contextual-site-assistant' ) );
+$shihela_contextual_site_assistant_excluded_pages  = get_option( 'shihela_contextual_site_assistant_excluded_pages', '' );
+$shihela_contextual_site_assistant_privacy_notice  = get_option( 'shihela_contextual_site_assistant_privacy_notice', '' );
+
+// Smart WP AI Client & Connectors readiness check.
+$shihela_ai_client_exists = function_exists( 'wp_ai_client_prompt' );
+$shihela_ai_provider_ok   = false;
+if ( $shihela_ai_client_exists ) {
+	try {
+		$shihela_ai_provider_ok = wp_ai_client_prompt( 'ping' )->is_supported_for_text_generation();
+	} catch ( Throwable $e ) {
+		$shihela_ai_provider_ok = false;
+	}
+}
+
+// Quick Usage Summary (today's chat count + total captured leads).
+$shihela_daily_data  = get_option( 'shihela_contextual_site_assistant_daily_data', array() );
+$shihela_today_chats = ( is_array( $shihela_daily_data ) && isset( $shihela_daily_data['date'] ) && current_time( 'Y-m-d' ) === $shihela_daily_data['date'] )
+	? (int) ( $shihela_daily_data['count'] ?? 0 )
+	: 0;
+$shihela_daily_cap   = (int) $shihela_contextual_site_assistant_daily_limit;
+$shihela_usage_text  = $shihela_daily_cap > 0
+	? sprintf( '%d / %d', $shihela_today_chats, $shihela_daily_cap )
+	: sprintf( '%d / %s', $shihela_today_chats, __( 'Unlimited', 'shihela-contextual-site-assistant' ) );
+
+global $wpdb;
+$shihela_leads_table = $wpdb->prefix . 'shihela_contextual_site_assistant_leads';
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+$shihela_total_leads_count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $shihela_leads_table ) );
+$shihela_wc_active         = function_exists( 'wc_get_product' );
+
 $shihela_visibility_labels = array(
 	'public'    => __( 'Public', 'shihela-contextual-site-assistant' ),
 	'logged_in' => __( 'Logged-in Users', 'shihela-contextual-site-assistant' ),
@@ -65,6 +100,19 @@ $shihela_visibility_label  = isset( $shihela_visibility_labels[ $shihela_context
 			</a>
 		</div>
 	</header>
+
+	<?php if ( $shihela_ai_client_exists && ! $shihela_ai_provider_ok ) : ?>
+		<div class="shihela-warning-banner" role="alert">
+			<span class="dashicons dashicons-warning"></span>
+			<div class="shihela-warning-banner-body">
+				<strong><?php esc_html_e( 'No Active AI Model Configured', 'shihela-contextual-site-assistant' ); ?></strong>
+				<p><?php esc_html_e( 'WordPress AI Client is available, but no text-generation provider is currently configured. Connect an AI provider (Gemini, OpenAI, Anthropic, etc.) so visitors can receive replies.', 'shihela-contextual-site-assistant' ); ?></p>
+			</div>
+			<a href="<?php echo esc_url( admin_url( 'options-connectors.php' ) ); ?>" class="button button-primary">
+				<?php esc_html_e( 'Open Settings > Connectors', 'shihela-contextual-site-assistant' ); ?>
+			</a>
+		</div>
+	<?php endif; ?>
 
 	<div class="shihela-contextual-site-assistant-admin-container vertical-layout">
 		<!-- LEFT SIDEBAR: Vertical Tab Navigation & Status Cards -->
@@ -96,7 +144,19 @@ $shihela_visibility_label  = isset( $shihela_visibility_labels[ $shihela_context
 				<div class="shihela-contextual-site-assistant-sidebar-card">
 					<h3><span class="dashicons dashicons-info"></span> <?php esc_html_e( 'Quick Status', 'shihela-contextual-site-assistant' ); ?></h3>
 					<ul class="shihela-contextual-site-assistant-status-list">
-						<li><strong><?php esc_html_e( 'WP AI Client:', 'shihela-contextual-site-assistant' ); ?></strong> <span class="shihela-badge green"><?php echo function_exists( 'wp_ai_client_prompt' ) ? esc_html__( 'Active', 'shihela-contextual-site-assistant' ) : esc_html__( 'Inactive', 'shihela-contextual-site-assistant' ); ?></span></li>
+						<li>
+							<strong><?php esc_html_e( 'WP AI Client:', 'shihela-contextual-site-assistant' ); ?></strong>
+							<?php if ( $shihela_ai_client_exists && $shihela_ai_provider_ok ) : ?>
+								<span class="shihela-badge green"><?php esc_html_e( 'Ready', 'shihela-contextual-site-assistant' ); ?></span>
+							<?php elseif ( $shihela_ai_client_exists ) : ?>
+								<span class="shihela-badge amber"><?php esc_html_e( 'No Provider', 'shihela-contextual-site-assistant' ); ?></span>
+							<?php else : ?>
+								<span class="shihela-badge gray"><?php esc_html_e( 'Inactive', 'shihela-contextual-site-assistant' ); ?></span>
+							<?php endif; ?>
+						</li>
+						<li><strong><?php esc_html_e( 'Today\'s Chats:', 'shihela-contextual-site-assistant' ); ?></strong> <span><?php echo esc_html( $shihela_usage_text ); ?></span></li>
+						<li><strong><?php esc_html_e( 'Total Leads:', 'shihela-contextual-site-assistant' ); ?></strong> <span><?php echo esc_html( number_format_i18n( $shihela_total_leads_count ) ); ?></span></li>
+						<li><strong><?php esc_html_e( 'WooCommerce:', 'shihela-contextual-site-assistant' ); ?></strong> <span class="shihela-badge <?php echo $shihela_wc_active ? 'green' : 'gray'; ?>"><?php echo $shihela_wc_active ? esc_html__( 'Context Active', 'shihela-contextual-site-assistant' ) : esc_html__( 'Not Active', 'shihela-contextual-site-assistant' ); ?></span></li>
 						<li><strong><?php esc_html_e( 'WhatsApp CS:', 'shihela-contextual-site-assistant' ); ?></strong> <span class="shihela-badge <?php echo ! empty( $shihela_contextual_site_assistant_whatsapp_number ) ? 'green' : 'gray'; ?>"><?php echo ! empty( $shihela_contextual_site_assistant_whatsapp_number ) ? esc_html__( 'Enabled', 'shihela-contextual-site-assistant' ) : esc_html__( 'Not Set', 'shihela-contextual-site-assistant' ); ?></span></li>
 						<li><strong><?php esc_html_e( 'Visibility:', 'shihela-contextual-site-assistant' ); ?></strong> <span><?php echo esc_html( $shihela_visibility_label ); ?></span></li>
 					</ul>
@@ -151,15 +211,58 @@ $shihela_visibility_label  = isset( $shihela_visibility_labels[ $shihela_context
 								<p class="description"><?php esc_html_e( 'Clickable suggestion pills shown above the input box (one question per line).', 'shihela-contextual-site-assistant' ); ?></p>
 							</div>
 
+							<div class="shihela-form-row">
+								<div class="shihela-contextual-site-assistant-form-group col-half">
+									<label for="shihela_contextual_site_assistant_widget_position"><?php esc_html_e( 'Screen Widget Position', 'shihela-contextual-site-assistant' ); ?></label>
+									<select name="shihela_contextual_site_assistant_widget_position" id="shihela_contextual_site_assistant_widget_position" class="shihela-contextual-site-assistant-select">
+										<option value="bottom-right" <?php selected( $shihela_contextual_site_assistant_widget_position, 'bottom-right' ); ?>><?php esc_html_e( 'Bottom Right (Recommended)', 'shihela-contextual-site-assistant' ); ?></option>
+										<option value="bottom-left" <?php selected( $shihela_contextual_site_assistant_widget_position, 'bottom-left' ); ?>><?php esc_html_e( 'Bottom Left', 'shihela-contextual-site-assistant' ); ?></option>
+										<option value="top-right" <?php selected( $shihela_contextual_site_assistant_widget_position, 'top-right' ); ?>><?php esc_html_e( 'Top Right', 'shihela-contextual-site-assistant' ); ?></option>
+										<option value="top-left" <?php selected( $shihela_contextual_site_assistant_widget_position, 'top-left' ); ?>><?php esc_html_e( 'Top Left', 'shihela-contextual-site-assistant' ); ?></option>
+									</select>
+									<p class="description"><?php esc_html_e( 'Position of the launcher bubble on visitors\' screens.', 'shihela-contextual-site-assistant' ); ?></p>
+								</div>
+
+								<div class="shihela-contextual-site-assistant-form-group col-half">
+									<label for="shihela_contextual_site_assistant_theme_mode"><?php esc_html_e( 'Widget Appearance Mode', 'shihela-contextual-site-assistant' ); ?></label>
+									<select name="shihela_contextual_site_assistant_theme_mode" id="shihela_contextual_site_assistant_theme_mode" class="shihela-contextual-site-assistant-select">
+										<option value="light" <?php selected( $shihela_contextual_site_assistant_theme_mode, 'light' ); ?>><?php esc_html_e( 'Light Mode', 'shihela-contextual-site-assistant' ); ?></option>
+										<option value="dark" <?php selected( $shihela_contextual_site_assistant_theme_mode, 'dark' ); ?>><?php esc_html_e( 'Dark Mode', 'shihela-contextual-site-assistant' ); ?></option>
+										<option value="auto" <?php selected( $shihela_contextual_site_assistant_theme_mode, 'auto' ); ?>><?php esc_html_e( 'Auto (Follow Visitor OS Theme)', 'shihela-contextual-site-assistant' ); ?></option>
+									</select>
+									<p class="description"><?php esc_html_e( 'Choose light, dark, or automatic system-matched styling.', 'shihela-contextual-site-assistant' ); ?></p>
+								</div>
+							</div>
+
+							<div class="shihela-toggle-card">
+								<div class="shihela-toggle-info">
+									<strong><?php esc_html_e( 'Enable Proactive Greeting Bubble', 'shihela-contextual-site-assistant' ); ?></strong>
+									<p><?php esc_html_e( 'Show a dismissible greeting callout beside the launcher button after a short delay to encourage visitor engagement.', 'shihela-contextual-site-assistant' ); ?></p>
+								</div>
+								<label class="shihela-switch">
+									<input type="checkbox" name="shihela_contextual_site_assistant_greeting_enable" value="1" <?php checked( $shihela_contextual_site_assistant_greeting_enable, '1' ); ?>>
+									<span class="shihela-slider"></span>
+								</label>
+							</div>
+
+							<div class="shihela-form-row">
+								<div class="shihela-contextual-site-assistant-form-group col-half">
+									<label for="shihela_contextual_site_assistant_greeting_text"><?php esc_html_e( 'Proactive Greeting Text', 'shihela-contextual-site-assistant' ); ?></label>
+									<input type="text" name="shihela_contextual_site_assistant_greeting_text" id="shihela_contextual_site_assistant_greeting_text" value="<?php echo esc_attr( $shihela_contextual_site_assistant_greeting_text ); ?>" class="regular-text shihela-contextual-site-assistant-input" placeholder="<?php esc_attr_e( 'Need help with this page? Ask me!', 'shihela-contextual-site-assistant' ); ?>">
+									<p class="description"><?php esc_html_e( 'Short callout text shown next to the floating button.', 'shihela-contextual-site-assistant' ); ?></p>
+								</div>
+
+								<div class="shihela-contextual-site-assistant-form-group col-half">
+									<label for="shihela_contextual_site_assistant_greeting_delay"><?php esc_html_e( 'Greeting Delay (Seconds)', 'shihela-contextual-site-assistant' ); ?></label>
+									<input type="number" name="shihela_contextual_site_assistant_greeting_delay" id="shihela_contextual_site_assistant_greeting_delay" value="<?php echo esc_attr( $shihela_contextual_site_assistant_greeting_delay ); ?>" min="1" max="120" class="small-text shihela-contextual-site-assistant-input">
+									<p class="description"><?php esc_html_e( 'Seconds to wait before showing the greeting bubble (1–120).', 'shihela-contextual-site-assistant' ); ?></p>
+								</div>
+							</div>
+
 							<div class="shihela-contextual-site-assistant-form-group">
-								<label for="shihela_contextual_site_assistant_widget_position"><?php esc_html_e( 'Screen Widget Position', 'shihela-contextual-site-assistant' ); ?></label>
-								<select name="shihela_contextual_site_assistant_widget_position" id="shihela_contextual_site_assistant_widget_position" class="shihela-contextual-site-assistant-select">
-									<option value="bottom-right" <?php selected( $shihela_contextual_site_assistant_widget_position, 'bottom-right' ); ?>><?php esc_html_e( 'Bottom Right (Recommended)', 'shihela-contextual-site-assistant' ); ?></option>
-									<option value="bottom-left" <?php selected( $shihela_contextual_site_assistant_widget_position, 'bottom-left' ); ?>><?php esc_html_e( 'Bottom Left', 'shihela-contextual-site-assistant' ); ?></option>
-									<option value="top-right" <?php selected( $shihela_contextual_site_assistant_widget_position, 'top-right' ); ?>><?php esc_html_e( 'Top Right', 'shihela-contextual-site-assistant' ); ?></option>
-									<option value="top-left" <?php selected( $shihela_contextual_site_assistant_widget_position, 'top-left' ); ?>><?php esc_html_e( 'Top Left', 'shihela-contextual-site-assistant' ); ?></option>
-								</select>
-								<p class="description"><?php esc_html_e( 'Position of the launcher bubble on visitors\' screens.', 'shihela-contextual-site-assistant' ); ?></p>
+								<label for="shihela_contextual_site_assistant_privacy_notice"><?php esc_html_e( 'Footer Privacy / GDPR Consent Notice (Optional)', 'shihela-contextual-site-assistant' ); ?></label>
+								<input type="text" name="shihela_contextual_site_assistant_privacy_notice" id="shihela_contextual_site_assistant_privacy_notice" value="<?php echo esc_attr( $shihela_contextual_site_assistant_privacy_notice ); ?>" class="large-text shihela-contextual-site-assistant-input" placeholder="<?php esc_attr_e( 'e.g. By chatting, you agree to our Privacy Policy.', 'shihela-contextual-site-assistant' ); ?>">
+								<p class="description"><?php esc_html_e( 'Displayed subtly under the chat input. Automatically appends a link to your WordPress Privacy Policy page if configured.', 'shihela-contextual-site-assistant' ); ?></p>
 							</div>
 						</div>
 					</div>
@@ -291,6 +394,12 @@ $shihela_visibility_label  = isset( $shihela_visibility_labels[ $shihela_context
 									<option value="admin" <?php selected( $shihela_contextual_site_assistant_access_control, 'admin' ); ?>><?php esc_html_e( 'Administrators Only', 'shihela-contextual-site-assistant' ); ?></option>
 								</select>
 								<p class="description"><?php esc_html_e( 'Define who can view and interact with the chatbot widget.', 'shihela-contextual-site-assistant' ); ?></p>
+							</div>
+
+							<div class="shihela-contextual-site-assistant-form-group">
+								<label for="shihela_contextual_site_assistant_excluded_pages"><?php esc_html_e( 'Exclude Specific Page / Post IDs', 'shihela-contextual-site-assistant' ); ?></label>
+								<input type="text" name="shihela_contextual_site_assistant_excluded_pages" id="shihela_contextual_site_assistant_excluded_pages" value="<?php echo esc_attr( $shihela_contextual_site_assistant_excluded_pages ); ?>" class="regular-text shihela-contextual-site-assistant-input" placeholder="e.g. 12, 45, 98">
+								<p class="description"><?php esc_html_e( 'Comma-separated Post or Page IDs where the widget will be hidden (e.g. Checkout or Login pages). You can also disable the widget per page inside the Post/Page editor sidebar.', 'shihela-contextual-site-assistant' ); ?></p>
 							</div>
 
 							<div class="shihela-form-row">

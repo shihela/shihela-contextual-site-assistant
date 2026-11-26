@@ -15,12 +15,28 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 $shihela_contextual_site_assistant_bot_name        = get_option( 'shihela_contextual_site_assistant_bot_name', 'Shihela AI' );
-$shihela_contextual_site_assistant_welcome_message = get_option( 'shihela_contextual_site_assistant_welcome_message', 'Hello! I am your AI assistant. How can I help you today?' );
+$shihela_contextual_site_assistant_welcome_message = get_option( 'shihela_contextual_site_assistant_welcome_message', __( 'Hello! I am your AI assistant. How can I help you today?', 'shihela-contextual-site-assistant' ) );
 $shihela_contextual_site_assistant_theme_color     = get_option( 'shihela_contextual_site_assistant_theme_color', '#4f46e5' );
 $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contextual_site_assistant_widget_position', 'bottom-right' );
+$shihela_contextual_site_assistant_theme_mode      = get_option( 'shihela_contextual_site_assistant_theme_mode', 'light' );
+$shihela_contextual_site_assistant_greeting_text   = get_option( 'shihela_contextual_site_assistant_greeting_text', __( 'Need help with this page? Ask me!', 'shihela-contextual-site-assistant' ) );
+$shihela_contextual_site_assistant_privacy_notice  = get_option( 'shihela_contextual_site_assistant_privacy_notice', '' );
+$shihela_contextual_site_assistant_privacy_url     = function_exists( 'get_privacy_policy_url' ) ? get_privacy_policy_url() : '';
+if ( ! in_array( $shihela_contextual_site_assistant_theme_mode, array( 'light', 'dark', 'auto' ), true ) ) {
+	$shihela_contextual_site_assistant_theme_mode = 'light';
+}
 ?>
 
-<div id="shihela-contextual-site-assistant-widget-root" class="shihela-contextual-site-assistant-widget-root shihela-position-<?php echo esc_attr( $shihela_contextual_site_assistant_widget_position ); ?>" style="--shihela-accent: <?php echo esc_attr( $shihela_contextual_site_assistant_theme_color ); ?>;" hidden>
+<div id="shihela-contextual-site-assistant-widget-root" class="shihela-contextual-site-assistant-widget-root shihela-position-<?php echo esc_attr( $shihela_contextual_site_assistant_widget_position ); ?> shihela-theme-<?php echo esc_attr( $shihela_contextual_site_assistant_theme_mode ); ?>" style="--shihela-accent: <?php echo esc_attr( $shihela_contextual_site_assistant_theme_color ); ?>;" hidden>
+	<!-- Proactive Greeting Bubble (v1.5.0) -->
+	<div id="shihela-contextual-site-assistant-greeting" class="shihela-contextual-site-assistant-greeting-bubble" role="status" hidden>
+		<button type="button" id="shihela-contextual-site-assistant-greeting-open" class="shihela-greeting-text-btn">
+			<?php echo esc_html( $shihela_contextual_site_assistant_greeting_text ); ?>
+		</button>
+		<button type="button" id="shihela-contextual-site-assistant-greeting-dismiss" class="shihela-greeting-dismiss-btn" aria-label="<?php esc_attr_e( 'Dismiss greeting', 'shihela-contextual-site-assistant' ); ?>">
+			&times;
+		</button>
+	</div>
 	<!-- Floating Launcher Button -->
 	<button id="shihela-contextual-site-assistant-launcher" class="shihela-contextual-site-assistant-launcher" aria-label="<?php esc_attr_e( 'Open Chat Assistant', 'shihela-contextual-site-assistant' ); ?>">
 		<svg class="shihela-contextual-site-assistant-icon-chat" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -97,6 +113,14 @@ $shihela_contextual_site_assistant_widget_position = get_option( 'shihela_contex
 					</svg>
 				</button>
 			</form>
+			<?php if ( ! empty( $shihela_contextual_site_assistant_privacy_notice ) ) : ?>
+				<div class="shihela-contextual-site-assistant-privacy-notice">
+					<span><?php echo esc_html( $shihela_contextual_site_assistant_privacy_notice ); ?></span>
+					<?php if ( ! empty( $shihela_contextual_site_assistant_privacy_url ) ) : ?>
+						<a href="<?php echo esc_url( $shihela_contextual_site_assistant_privacy_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Privacy Policy', 'shihela-contextual-site-assistant' ); ?></a>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 		</footer>
 	</div>
 </div>

@@ -63,6 +63,9 @@
         const form = find('#shihela-contextual-site-assistant-chat-form');
         const input = find('#shihela-contextual-site-assistant-chat-input');
         const submitBtn = find('#shihela-contextual-site-assistant-chat-submit');
+        const greetingBubble = find('#shihela-contextual-site-assistant-greeting');
+        const greetingOpenBtn = find('#shihela-contextual-site-assistant-greeting-open');
+        const greetingDismissBtn = find('#shihela-contextual-site-assistant-greeting-dismiss');
 
         if (!launcher || !panel || !messagesBody || !form || !input || !submitBtn) {
             return;
@@ -123,6 +126,59 @@
         // Initialize history & quick suggestion chips
         initChatHistory();
         renderSuggestionChips();
+        initProactiveGreeting();
+
+        function initProactiveGreeting() {
+            if (!greetingBubble || !cfg.greeting_enable) {
+                return;
+            }
+            // Yield to PRO proactive triggers when PRO triggers are enabled.
+            if (typeof shihelaProPublic !== 'undefined' && Number(shihelaProPublic.enable_triggers)) {
+                return;
+            }
+
+            const dismissedKey = 'shihela_csa_greeting_dismissed_v1';
+            let wasDismissed = false;
+            try {
+                wasDismissed = sessionStorage.getItem(dismissedKey) === '1';
+            } catch (e) {
+                wasDismissed = false;
+            }
+
+            const dismissGreeting = () => {
+                greetingBubble.setAttribute('hidden', '');
+                try {
+                    sessionStorage.setItem(dismissedKey, '1');
+                } catch (e) {
+                    // Ignore storage errors
+                }
+            };
+
+            if (greetingOpenBtn) {
+                greetingOpenBtn.addEventListener('click', () => {
+                    dismissGreeting();
+                    openPanel();
+                });
+            }
+
+            if (greetingDismissBtn) {
+                greetingDismissBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dismissGreeting();
+                });
+            }
+
+            if (wasDismissed) {
+                return;
+            }
+
+            const delayMs = Math.max(1, Number(cfg.greeting_delay) || 5) * 1000;
+            window.setTimeout(() => {
+                if (panel.classList.contains('hidden')) {
+                    greetingBubble.removeAttribute('hidden');
+                }
+            }, delayMs);
+        }
 
         // Enforce max character limit
         if (cfg.max_length) {
@@ -280,6 +336,9 @@
         }
 
         function openPanel() {
+            if (greetingBubble) {
+                greetingBubble.setAttribute('hidden', '');
+            }
             panel.classList.remove('hidden');
             panel.setAttribute('aria-hidden', 'false');
             launcher.setAttribute('aria-expanded', 'true');
